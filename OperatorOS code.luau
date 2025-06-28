@@ -45,7 +45,7 @@ local TerminalTextLabels = {}
 --Cmds
 local Commands = {
 	["-r"] = {
-		description = "Run code using a specified method.";
+		description = "Reformats and runs code for compadibility.";
 		args = "<subcommand> <code_or_url>";
 		subcommands = {
 			["line"] = {
@@ -184,7 +184,7 @@ end
 	};
 	
 	["-sudo"] = {
-		description = "Run code using a specified method.";
+		description = "Run code without reformatting them for compatibility.";
 		args = "<subcommand> <code_or_url>";
 		subcommands = {
 			["line"] = {
@@ -211,7 +211,7 @@ end
 			};
 
 			["git"] = {
-				description = "Simulate fetching and executing code from a git URL.";
+				description = "Fetches code from gists and executes them.";
 				execute = function(args)
 					Console("WARNING: this requires a modem")
 					if not System.Parts.Modem then
@@ -280,7 +280,7 @@ end
 			};
 
 			["git"] = {
-				description = "Simulate fetching and executing code from a git URL.";
+				description = "Fetches code from gists and executes them.";
 				execute = function(args)
 					Console("WARNING: this requires a modem")
 					if System.Parts.Modem then
@@ -337,7 +337,7 @@ end
 	};
 
 	["-save"] = {
-		description = "Clear the terminal screen.";
+		description = "Saves to disk";
 		args = "<Disk> <Key_OR_Path> <Name> <Data>";
 		execute = function(args)
 			local disk = System.Parts[args[1]]
@@ -361,7 +361,7 @@ end
 	};
 
 	["-read"] = {
-		description = "Clear the terminal screen.";
+		description = "Reads Disk";
 		args = "<subcommand> <Disk> <Key_OR_Path> <Name>";
 		subcommands = {
 			["run"] = {
@@ -375,6 +375,7 @@ end
 				end;
 			};
 			["print"] = {
+
 				execute = function(args)
 					local disk = System.Parts[args[1]]
 					local path = args[2]..args[3]
@@ -398,7 +399,7 @@ end
 	};
 
 	["-print"] = {
-		description = "Refresh terminal output labels.";
+		description = "Prints in console.";
 		args = "<string>";
 		execute = function(args)
 			Console(table.concat(args, " "))
@@ -406,8 +407,8 @@ end
 	};
 
 
-	["-neofetch"] = {
-		description = "Display system information.";
+	["-fetch"] = {
+		description = "Display system info";
 		args = "";
 		execute = function()
 			local asciiLogo = [[
@@ -439,8 +440,9 @@ end
 		args = "";
 		execute = function()
 			Console("Available commands:")
-			for cmd, info in pairs(Commands) do
+			for cmd, info in pairs(GetCommands()) do
 				Console(`{cmd}: {info.description or "No description"}`)
+				Console(`Args: {info.args or "No args"}`)
 				if info.subcommands then
 					for sub, subInfo in pairs(info.subcommands) do
 						Console(`   {sub}: {subInfo.description or "No description"}`)
@@ -450,7 +452,7 @@ end
 		end;
 	};
 	["-addpart"] = {
-		description = "Show available commands.";
+		description = "Adds part to System.Parts";
 		args = "<PartName>";
 		execute = function(args)
 
@@ -468,7 +470,7 @@ end
 		end;
 	};
 	["-removepart"] = {
-		description = "Show available commands.";
+		description = "removes part to System.Parts";
 		args = "<PartName>";
 		execute = function(args)
 
@@ -480,6 +482,13 @@ end
 			else
 				ConsoleWarn(`{args[1]} is not a part in System.Parts`)
 			end
+		end;
+	};
+	["-shutdown"] = {
+		description = "Shuts down system";
+		args = "<PartName>";
+		execute = function(args)
+			GetSuperPart("Microcontroller"):Shutdown()
 		end;
 	};
 	["-restart"] = {
@@ -546,6 +555,10 @@ end
 
 	};
 }
+
+function GetCommands()
+	return Commands
+end
 
 function SaveData(Disk,Key_OR_Path,Data)
 	Disk:Write(Key_OR_Path,Data)
