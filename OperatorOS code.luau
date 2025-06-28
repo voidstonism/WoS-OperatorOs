@@ -38,7 +38,6 @@ local System ={
 local repr = require("repr")
 
 local MAINFRAME
-
 --Cache
 local TerminalTextLabels = {}
 
