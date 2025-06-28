@@ -62,6 +62,9 @@ local Commands = {
 					code = string.gsub(code, 'GetPartFromPort%(%d+,%s*"(.-)"%)', 'GetSuperPart("%1")')
 					code = string.gsub(code, 'GetPart%(%s*"(.-)"%)', 'GetSuperPart("%1")')
 
+					code = string.gsub(code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'GetSuperParts("%1")')
+					code = string.gsub(code, 'GetParts%(%s*"(.-)"%)', 'GetSuperParts("%1")')
+
 					-- Cache-safe prepend of GetSuperPart
 					if not string.find(code, "function GetSuperPart") then
 						local superPartDef = [[
@@ -71,6 +74,16 @@ function GetSuperPart(PartName: string)
 		if found then return found end
 	end
 	local part = GetPart(PartName)
+	if part then return part end
+	return nil
+end
+
+function GetSuperParts(PartName: string)
+	for port = 1, 20 do
+		local found = GetPartsFromPort(port, PartName)
+		if found then return found end
+	end
+	local part = GetParts(PartName)
 	if part then return part end
 	return nil
 end
@@ -119,6 +132,9 @@ end
 					Code = string.gsub(Code, 'GetPartFromPort%(%d+,%s*"(.-)"%)', 'GetSuperPart("%1")')
 					Code = string.gsub(Code, 'GetPart%(%s*"(.-)"%)', 'GetSuperPart("%1")')
 
+					Code = string.gsub(Code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'GetSuperParts("%1")')
+					Code = string.gsub(Code, 'GetParts%(%s*"(.-)"%)', 'GetSuperParts("%1")')
+
 					if not string.find(Code, "function GetSuperPart") then
 						local superPartDef = [[
 function GetSuperPart(PartName: string)
@@ -127,6 +143,16 @@ function GetSuperPart(PartName: string)
 		if found then return found end
 	end
 	local part = GetPart(PartName)
+	if part then return part end
+	return nil
+end
+
+function GetSuperParts(PartName: string)
+	for port = 1, 20 do
+		local found = GetPartsFromPort(port, PartName)
+		if found then return found end
+	end
+	local part = GetParts(PartName)
 	if part then return part end
 	return nil
 end
