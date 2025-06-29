@@ -43,7 +43,7 @@ local TerminalTextLabels = {}
 
 --Cmds
 local Commands = {
-	["-r"] = {
+	["run"] = {
 		description = "Reformats and runs code for compadibility.";
 		args = "<subcommand> <code_or_url>";
 		subcommands = {
@@ -182,7 +182,7 @@ end
 		};
 	};
 	
-	["-sudo"] = {
+	["ru"] = {
 		description = "Run code without reformatting them for compatibility.";
 		args = "<subcommand> <code_or_url>";
 		subcommands = {
@@ -258,7 +258,7 @@ end
 	};
 
 
-	["-update"] = {
+	["update"] = {
 		description = "updates system";
 		args = "<subcommand> <raw_or_git>";
 		subcommands = {
@@ -312,7 +312,7 @@ end
 		};
 	};
 
-	["-parts"] = {
+	["fetchparts"] = {
 		description = "List all detected parts.";
 		args = "";
 		execute = function()
@@ -323,19 +323,19 @@ end
 		end;
 	};
 
-	["-clear"] = {
+	["clear"] = {
 		description = "Clear the terminal screen.";
 		args = "";
 		execute = function()
 			Console("Clearing terminal...")
 			for _, label in pairs(TerminalTextLabels) do
-				label:Destroy()
+				label:Remove()
 			end
 			TerminalTextLabels = {}
 		end;
 	};
 
-	["-save"] = {
+	["write"] = {
 		description = "Saves to disk";
 		args = "<Disk> <Key_OR_Path> <Name> <Data>";
 		execute = function(args)
@@ -359,7 +359,7 @@ end
 		end;
 	};
 
-	["-read"] = {
+	["read"] = {
 		description = "Reads Disk";
 		args = "<subcommand> <Disk> <Key_OR_Path> <Name>";
 		subcommands = {
@@ -386,7 +386,7 @@ end
 		}
 	};
 
-	["-rfh"] = {
+	["refresh"] = {
 		description = "Refresh terminal output labels.";
 		args = "";
 		execute = function()
@@ -397,7 +397,7 @@ end
 		end;
 	};
 
-	["-print"] = {
+	["console"] = {
 		description = "Prints in console.";
 		args = "<string>";
 		execute = function(args)
@@ -406,7 +406,7 @@ end
 	};
 
 
-	["-fetch"] = {
+	["fetch"] = {
 		description = "Display system info";
 		args = "";
 		execute = function()
@@ -419,7 +419,6 @@ end
 				"Kernel: Pilot.lua";
 				"Uptime: " .. math.floor(tick()) .. "s";
 				"Packages: " .. tostring(#System.Threads);
-				"Screen: " .. (Screen and "Connected" or "Missing");
 			}
 
 			for line in string.gmatch(asciiLogo, "[^\n]+") do
@@ -434,7 +433,7 @@ end
 	};
 
 
-	["-help"] = {
+	["help"] = {
 		description = "Show available commands.";
 		args = "";
 		execute = function()
@@ -450,7 +449,7 @@ end
 			end
 		end;
 	};
-	["-addpart"] = {
+	["addpart"] = {
 		description = "Adds part to System.Parts";
 		args = "<PartName>";
 		execute = function(args)
@@ -468,7 +467,7 @@ end
 
 		end;
 	};
-	["-removepart"] = {
+	["removepart"] = {
 		description = "removes part to System.Parts";
 		args = "<PartName>";
 		execute = function(args)
@@ -483,21 +482,31 @@ end
 			end
 		end;
 	};
-	["-shutdown"] = {
+	["exit"] = {
 		description = "Shuts down system";
 		args = "<PartName>";
 		execute = function(args)
+			for _, thread in ipairs(System.Threads) do
+							if coroutine.status(thread) ~= "dead" then
+								-- No native coroutine.kill, so we can only close if coroutine.wrap used or yield checked
+								pcall(function()
+									coroutine.close(thread) -- Works in Pilot.lua with Luau coroutine extensions
+								end)
+							end
+						end
+			Console("Ceasing All Threads")
+			MAINFRAME:Remove()
 			GetSuperPart("Microcontroller"):Shutdown()
 		end;
 	};
-	["-restart"] = {
+	["restart"] = {
 		description = "Show available commands.";
 		args = "";
 		execute = function(args)
 			Restart()
 		end;
 	};
-	["-c"] = {
+	["cease"] = {
 		description = "Show available commands.";
 		args = "";
 		subcommands = {
