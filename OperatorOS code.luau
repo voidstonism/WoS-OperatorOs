@@ -35,8 +35,6 @@ local System ={
 	Files = {}
 }
 
-local repr = require("repr")
-
 local MAINFRAME
 --Cache
 local TerminalTextLabels = {}
@@ -181,7 +179,6 @@ end
 			};
 		};
 	};
-	
 	["ru"] = {
 		description = "Run code without reformatting them for compatibility.";
 		args = "<subcommand> <code_or_url>";
@@ -256,8 +253,6 @@ end
 			};
 		};
 	};
-
-
 	["update"] = {
 		description = "updates system";
 		args = "<subcommand> <raw_or_git>";
@@ -292,8 +287,6 @@ end
 
 						Console("Requesting Git Raw")
 
-						wait(1)
-
 						local Code = System.Parts.Modem:GetAsync(url)
 
 						if GetSuperPart("Microcontroller") then
@@ -311,7 +304,6 @@ end
 			};
 		};
 	};
-
 	["fetchparts"] = {
 		description = "List all detected parts.";
 		args = "";
@@ -322,7 +314,6 @@ end
 			end
 		end;
 	};
-
 	["clear"] = {
 		description = "Clear the terminal screen.";
 		args = "";
@@ -333,8 +324,14 @@ end
 			end
 			TerminalTextLabels = {}
 		end;
+	};	
+	["wait"] = {
+		description = "Clear the terminal screen.";
+		args = "<wait_time>";
+		execute = function(args)
+			wait(args[1])
+		end;
 	};
-
 	["write"] = {
 		description = "Saves to disk";
 		args = "<Disk> <Key_OR_Path> <Name> <Data>";
@@ -358,7 +355,6 @@ end
 			Console(`Saved to disk: {filename} : {content}`)
 		end;
 	};
-
 	["read"] = {
 		description = "Reads Disk";
 		args = "<subcommand> <Disk> <Key_OR_Path> <Name>";
@@ -385,7 +381,6 @@ end
 			};
 		}
 	};
-
 	["refresh"] = {
 		description = "Refresh terminal output labels.";
 		args = "";
@@ -396,7 +391,6 @@ end
 			end
 		end;
 	};
-
 	["console"] = {
 		description = "Prints in console.";
 		args = "<string>";
@@ -404,8 +398,6 @@ end
 			Console(table.concat(args, " "))
 		end;
 	};
-
-
 	["fetch"] = {
 		description = "Display system info";
 		args = "";
@@ -431,8 +423,6 @@ end
 			end
 		end
 	};
-
-
 	["help"] = {
 		description = "Show available commands.";
 		args = "";
@@ -487,13 +477,13 @@ end
 		args = "<PartName>";
 		execute = function(args)
 			for _, thread in ipairs(System.Threads) do
-							if coroutine.status(thread) ~= "dead" then
-								-- No native coroutine.kill, so we can only close if coroutine.wrap used or yield checked
-								pcall(function()
-									coroutine.close(thread) -- Works in Pilot.lua with Luau coroutine extensions
-								end)
-							end
-						end
+				if coroutine.status(thread) ~= "dead" then
+					-- No native coroutine.kill, so we can only close if coroutine.wrap used or yield checked
+					pcall(function()
+						coroutine.close(thread) -- Works in Pilot.lua with Luau coroutine extensions
+					end)
+				end
+			end
 			Console("Ceasing All Threads")
 			MAINFRAME:Remove()
 			GetSuperPart("Microcontroller"):Shutdown()
@@ -558,9 +548,36 @@ end
 
 					CeaseAllThreads();
 				end;
-			}
+			};
+			
 		}
 
+	};
+	["modem"] = {
+		description = "modem libary";
+		args = "<subcommand>";
+		subcommands = {
+			["sendmessage"] = {
+				args = "<Message>";
+				execute = function(args)
+					if not System.Parts.Modem then
+						ConsoleWarn("Modem Missing")
+						return
+					end
+					System.Parts.Modem:SendMessage(table.concat(args, " ", 1))	
+				end;
+			};
+			["postasync"] = {
+				args = "<url> <data> <contentType> <compress> <headers>";
+				execute = function(args)
+					if not System.Parts.Modem then
+						ConsoleWarn("Modem Missing")
+						return
+					end
+					System.Parts.Modem:PostAsync(args[1] or nil,args[2] or nil,args[3] or nil,args[4] or nil,args[5] or nil)	
+				end;
+			};
+		}
 	};
 }
 
@@ -577,7 +594,6 @@ function ReadData(Disk,Key_OR_Path)
 	local Data = disk:Read(Key_OR_Path)
 	return Data
 end
-
 
 function MAINFRAMINI()
 	MAINFRAME = Screen:CreateElement('ScrollingFrame',{
@@ -599,8 +615,6 @@ end
 MAINFRAMINI()
 
 --Universal helpers
-
-
 
 function CheckPart(part)
 	if part then
@@ -641,6 +655,12 @@ function Console(TXT:string)
 	table.insert(TerminalTextLabels, label) -- 👈 insert into numeric table
 
 	print(TXT)
+
+	return label -- OPTIONAL
+end
+
+function ModifyConsoleLine(TextLabel:TextLabel,Text)
+	TextLabel = Text
 end
 
 function ConsoleWarn(TXT:string)
@@ -700,39 +720,45 @@ local Success, Error = pcall(function()
 
 	if System.Parts.Keyboard then
 		System.Parts.Keyboard.TextInputted:Connect(function(txt)
+			--Handle Mulitple commands such as &&
 			txt = tostring(txt:gsub("\n", ""))
 			Console(txt)
-			local tokens = string.split(txt, " ")
-			local command = tokens[1]
-			local args = { unpack(tokens, 2) }
+			
+			local CommandsTable = txt:split(" && ")
+			
+			for i, CommandLine in CommandsTable do
+				local tokens = string.split(CommandLine, " ")
+				local command = tokens[1]
+				local args = { unpack(tokens, 2) }
 
-			local cmd = Commands[command]
-			if not cmd then
-				Console(`Unknown command: {command}`)
-				return
-			end
+				local cmd = Commands[command]
+				if not cmd then
+					Console(`Unknown command: {command}`)
+					return
+				end
 
-			-- Handle subcommands (like -r runnormal)
-			if cmd.subcommands then
-				local subcmdName = args[1]
-				local subcmd = cmd.subcommands[subcmdName]
-				if subcmd then
-					local subargs = { unpack(args, 2) }
+				-- Handle subcommands (like -r runnormal)
+				if cmd.subcommands then
+					local subcmdName = args[1]
+					local subcmd = cmd.subcommands[subcmdName]
+					if subcmd then
+						local subargs = { unpack(args, 2) }
+						local ok, err = pcall(function()
+							subcmd.execute(subargs)
+						end)
+						if not ok then
+							ConsoleWarn("Error: " .. err)
+						end
+					else
+						Console(`Unknown subcommand for {command}: {subcmdName}`)
+					end
+				else
 					local ok, err = pcall(function()
-						subcmd.execute(subargs)
+						cmd.execute(args)
 					end)
 					if not ok then
 						Console("Error: " .. err)
 					end
-				else
-					Console(`Unknown subcommand for {command}: {subcmdName}`)
-				end
-			else
-				local ok, err = pcall(function()
-					cmd.execute(args)
-				end)
-				if not ok then
-					Console("Error: " .. err)
 				end
 			end
 		end)
