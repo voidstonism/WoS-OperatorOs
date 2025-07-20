@@ -32,7 +32,8 @@ local PartstoGet = {
 local System ={
 	Parts = {};
 	Threads = {};
-	Files = {}
+	Files = {};
+	Connections = {}
 }
 
 local MAINFRAME
@@ -549,7 +550,7 @@ end
 					CeaseAllThreads();
 				end;
 			};
-			
+
 		}
 
 	};
@@ -575,6 +576,41 @@ end
 						return
 					end
 					System.Parts.Modem:PostAsync(args[1] or nil,args[2] or nil,args[3] or nil,args[4] or nil,args[5] or nil)	
+				end;
+			};
+			["connect"] = {
+				args = "";
+				execute = function(args)
+					if not System.Parts.Modem then
+						ConsoleWarn("Modem Missing")
+						return
+					end
+					System.Connections.ModemConnect = System.Parts.Modem.MessageSent:Connect(function(msg)
+						Console(`{System.Parts.Modem.NetworkID}: {msg}`)
+					end)	
+					ConsoleWarn(`Connected. Modem ID is {System.Parts.Modem.NetworkID}`)
+				end;
+			};
+			["disconnect"] = {
+				args = "";
+				execute = function(args)
+					if not System.Parts.Modem then
+						ConsoleWarn("Modem Missing")
+						return
+					end
+					System.Connections.ModemConnect:Disconnect()	
+					ConsoleWarn("System.Connections.ModemConnect has been disconnected")
+				end;
+			};
+			["changeid"] = {
+				args = "<ID>";
+				execute = function(args)
+					if not System.Parts.Modem then
+						ConsoleWarn("Modem Missing")
+						return
+					end
+					System.Parts.Modem.NetworkID = args[1]
+					Console(`Modem id has been changed to {args[1]}`)
 				end;
 			};
 		}
@@ -603,7 +639,7 @@ function MAINFRAMINI()
 		Rotation = 0;
 		CanvasSize = UDim2.fromScale(0.5,1);
 		AutomaticCanvasSize = Enum.AutomaticSize.Y;
-		BackgroundColor3 = Color3.new(0.0901961, 0.0156863, 0.337255)
+		BackgroundColor3 = Color3.fromRGB(16, 43, 70)
 	})
 
 	local UIListLayout = Screen:CreateElement("UIListLayout",{SortOrder = Enum.SortOrder.LayoutOrder}
@@ -723,9 +759,9 @@ local Success, Error = pcall(function()
 			--Handle Mulitple commands such as &&
 			txt = tostring(txt:gsub("\n", ""))
 			Console(txt)
-			
+
 			local CommandsTable = txt:split(" && ")
-			
+
 			for i, CommandLine in CommandsTable do
 				local tokens = string.split(CommandLine, " ")
 				local command = tokens[1]
@@ -733,7 +769,7 @@ local Success, Error = pcall(function()
 
 				local cmd = Commands[command]
 				if not cmd then
-					Console(`Unknown command: {command}`)
+					ConsoleWarn(`Unknown command: {command}`)
 					return
 				end
 
@@ -750,14 +786,14 @@ local Success, Error = pcall(function()
 							ConsoleWarn("Error: " .. err)
 						end
 					else
-						Console(`Unknown subcommand for {command}: {subcmdName}`)
+						ConsoleWarn(`Unknown subcommand for {command}: {subcmdName}`)
 					end
 				else
 					local ok, err = pcall(function()
 						cmd.execute(args)
 					end)
 					if not ok then
-						Console("Error: " .. err)
+						ConsoleWarn("Error: " .. err)
 					end
 				end
 			end
