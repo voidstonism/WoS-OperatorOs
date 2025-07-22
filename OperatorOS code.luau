@@ -586,7 +586,13 @@ end
 						return
 					end
 					System.Connections.ModemConnect = System.Parts.Modem.MessageSent:Connect(function(msg)
-						Console(`{System.Parts.Modem.NetworkID}: {msg}`)
+						local msgid = string.match(msg, "MID:%d%d%d%d%d%d%d") -- voidstonism message id format for modemcom
+	
+						if msgid then
+							Console(`{System.Parts.Modem.NetworkID}: {string.gsub(msg, "MID:%d%d%d%d%d%d%d ", "")}`)
+						else
+							Console(`{System.Parts.Modem.NetworkID}: {msg}`)
+						end
 					end)	
 					ConsoleWarn(`Connected. Modem ID is {System.Parts.Modem.NetworkID}`)
 				end;
