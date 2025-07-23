@@ -497,6 +497,23 @@ end
 			Restart()
 		end;
 	};
+	["power"] = {
+		description = "Show available commands.";
+		args = "";
+		execute = function(args)
+			Console("\nCURRENT POWER:")
+			local label = Console(tonumber(System.Parts.Instrument:GetReading("Power"),10))
+			local POWERTHREAD = coroutine.create(function()
+				while true do
+					wait(1)
+					ModifyConsoleLine(label, math.round(tonumber(System.Parts.Instrument:GetReading("Power"),10)))
+				end
+			end)
+			coroutine.resume(POWERTHREAD)
+			
+			table.insert(System.Threads, POWERTHREAD)
+		end;
+	};
 	["cease"] = {
 		description = "Show available commands.";
 		args = "";
@@ -554,6 +571,7 @@ end
 		}
 
 	};
+	
 	["modem"] = {
 		description = "modem libary";
 		args = "<subcommand>";
@@ -587,7 +605,7 @@ end
 					end
 					System.Connections.ModemConnect = System.Parts.Modem.MessageSent:Connect(function(msg)
 						local msgid = string.match(msg, "MID:%d%d%d%d%d%d%d") -- voidstonism message id format for modemcom
-	
+
 						if msgid then
 							Console(`{System.Parts.Modem.NetworkID}: {string.gsub(msg, "MID:%d%d%d%d%d%d%d ", "")}`)
 						else
@@ -702,7 +720,7 @@ function Console(TXT:string)
 end
 
 function ModifyConsoleLine(TextLabel:TextLabel,Text)
-	TextLabel = Text
+	TextLabel.Text = Text
 end
 
 function ConsoleWarn(TXT:string)
