@@ -33,7 +33,12 @@ local System ={
 	Parts = {};
 	Threads = {};
 	Files = {};
-	Connections = {}
+	Connections = {};
+	Configurables = {
+		ConsoleColor3 = Color3.fromRGB(255, 255, 255);
+		ConsoleWarningColor = Color3.fromRGB(255, 115, 0);
+		BackgroundColor3 = Color3.fromRGB(16, 43, 70);
+	};
 }
 
 local MAINFRAME
@@ -663,7 +668,7 @@ function MAINFRAMINI()
 		Rotation = 0;
 		CanvasSize = UDim2.fromScale(0.5,1);
 		AutomaticCanvasSize = Enum.AutomaticSize.Y;
-		BackgroundColor3 = Color3.fromRGB(16, 43, 70)
+		BackgroundColor3 = System.Configurables.BackgroundColor3
 	})
 
 	local UIListLayout = Screen:CreateElement("UIListLayout",{SortOrder = Enum.SortOrder.LayoutOrder}
@@ -706,7 +711,7 @@ function Console(TXT:string)
 		TextXAlignment = Enum.TextXAlignment.Left;
 		TextYAlignment = Enum.TextYAlignment.Top;
 		BackgroundColor3 = Color3.fromRGB(0,0,0);
-		TextColor3 = Color3.fromRGB(255,255,255);
+		TextColor3 = System.Configurables.ConsoleColor3;
 		AutomaticSize = Enum.AutomaticSize.Y;
 		BackgroundTransparency = 1;
 	})
@@ -732,11 +737,12 @@ function ConsoleWarn(TXT:string)
 		Text = "> "..TXT;
 		TextWrapped = true;
 		Font = "Ubuntu";
+		RichText = true;
 		TextSize = 20;
 		TextXAlignment = Enum.TextXAlignment.Left;
 		TextYAlignment = Enum.TextYAlignment.Top;
 		BackgroundColor3 = Color3.fromRGB(0,0,0);
-		TextColor3 = Color3.fromRGB(255, 115, 0);
+		TextColor3 = System.Configurables.ConsoleWarningColor;
 		AutomaticSize = Enum.AutomaticSize.Y;
 		BackgroundTransparency = 1;
 	})
