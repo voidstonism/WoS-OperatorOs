@@ -33,7 +33,12 @@ local System ={
 	Parts = {};
 	Threads = {};
 	Files = {};
-	Connections = {}
+	Connections = {};
+	Configurables = {
+		ConsoleColor3 = Color3.fromRGB(255, 255, 255);
+		ConsoleWarningColor = Color3.fromRGB(255, 115, 0);
+		BackgroundColor3 = Color3.fromRGB(16, 43, 70);
+	};
 }
 
 local MAINFRAME
@@ -56,38 +61,7 @@ local Commands = {
 					if string.find(code, "require") then ConsoleWarn("Warning: 'require' detected") end
 					if string.find(code, "getfenv") then ConsoleWarn("Warning: 'getfenv' detected") end
 
-					-- Auto replace GetPartFromPort and GetPart
-					code = string.gsub(code, 'GetPartFromPort%(%d+,%s*"(.-)"%)', 'GetSuperPart("%1")')
-					code = string.gsub(code, 'GetPart%(%s*"(.-)"%)', 'GetSuperPart("%1")')
-
-					code = string.gsub(code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'GetSuperParts("%1")')
-					code = string.gsub(code, 'GetParts%(%s*"(.-)"%)', 'GetSuperParts("%1")')
-
-					-- Cache-safe prepend of GetSuperPart
-					if not string.find(code, "function GetSuperPart") then
-						local superPartDef = [[
-function GetSuperPart(PartName: string)
-	for port = 1, 20 do
-		local found = GetPartFromPort(port, PartName)
-		if found then return found end
-	end
-	local part = GetPart(PartName)
-	if part then return part end
-	return nil
-end
-
-function GetSuperParts(PartName: string)
-	for port = 1, 20 do
-		local found = GetPartsFromPort(port, PartName)
-		if found then return found end
-	end
-	local part = GetParts(PartName)
-	if part then return part end
-	return nil
-end
-]]
-						code = superPartDef .. "\n" .. code
-					end
+					local code = formatcode(code)
 
 					print("Executing code:\n", code)
 					local ok, err = pcall(function()
@@ -105,7 +79,7 @@ end
 			["git"] = {
 				description = "Simulate fetching and executing code from a git URL.";
 				execute = function(args)
-					Console("WARNING: this requires a modem")
+					ConsoleWarn("WARNING: this requires a modem")
 					if not System.Parts.Modem then
 						Console("Modem Missing Cannot Run")
 						return
@@ -122,41 +96,7 @@ end
 
 					local Code = System.Parts.Modem:GetAsync(url)
 
-					-- Warnings
-					if string.find(Code, "loadstring") then ConsoleWarn("Warning: 'loadstring' detected") end
-					if string.find(Code, "require") then ConsoleWarn("Warning: 'require' detected") end
-					if string.find(Code, "getfenv") then ConsoleWarn("Warning: 'getfenv' detected") end
-
-					Code = string.gsub(Code, 'GetPartFromPort%(%d+,%s*"(.-)"%)', 'GetSuperPart("%1")')
-					Code = string.gsub(Code, 'GetPart%(%s*"(.-)"%)', 'GetSuperPart("%1")')
-
-					Code = string.gsub(Code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'GetSuperParts("%1")')
-					Code = string.gsub(Code, 'GetParts%(%s*"(.-)"%)', 'GetSuperParts("%1")')
-
-					if not string.find(Code, "function GetSuperPart") then
-						local superPartDef = [[
-function GetSuperPart(PartName: string)
-	for port = 1, 20 do
-		local found = GetPartFromPort(port, PartName)
-		if found then return found end
-	end
-	local part = GetPart(PartName)
-	if part then return part end
-	return nil
-end
-
-function GetSuperParts(PartName: string)
-	for port = 1, 20 do
-		local found = GetPartsFromPort(port, PartName)
-		if found then return found end
-	end
-	local part = GetParts(PartName)
-	if part then return part end
-	return nil
-end
-]]
-						Code = superPartDef .. "\n" .. Code
-					end
+					local Code = formatcode(Code)
 
 					print("Executing Git Code:\n", Code)
 					local ok, err = pcall(function()
@@ -210,7 +150,7 @@ end
 			["git"] = {
 				description = "Fetches code from gists and executes them.";
 				execute = function(args)
-					Console("WARNING: this requires a modem")
+					ConsoleWarn("WARNING: this requires a modem")
 					if not System.Parts.Modem then
 						Console("Modem Missing Cannot Run")
 						return
@@ -277,7 +217,7 @@ end
 			["git"] = {
 				description = "Fetches code from gists and executes them.";
 				execute = function(args)
-					Console("WARNING: this requires a modem")
+					ConsoleWarn("WARNING: this requires a modem")
 					if System.Parts.Modem then
 						local url = args[1]
 
@@ -354,11 +294,10 @@ end
 			-- Save
 			SaveData(disk, filename, content)
 			Console(`Saved to disk: {filename} : {content}`)
-			MirrorDataToFile()
 		end;
 	};
 	["read"] = {
-		description = "Reads Disk";
+		description = "Reads Disk -- more advanced than open";
 		args = "<subcommand> <Disk> <Key_OR_Path> <Name>";
 		subcommands = {
 			["run"] = {
@@ -369,77 +308,43 @@ end
 					--check if its a github raw
 					if string.find(Data,"https://raw.githubusercontent.com/") then
 						Console("Github File detected")
-						Console("WARNING: this requires a modem")
-					if not System.Parts.Modem then
-						Console("Modem Missing Cannot Run")
-						return
-					end
+						ConsoleWarn("WARNING: this requires a modem")
+						if not System.Parts.Modem then
+							Console("Modem Missing Cannot Run")
+							return
+						end
 
-					local url = Data
-					if not url then
-						Console("Usage: -r git <url>")
-						return
-					end
+						local url = Data
+						if not url then
+							Console("Usage: -r git <url>")
+							return
+						end
 
-					Console("Requesting Git Raw")
-					wait(1)
+						Console("Requesting Git Raw")
+						wait(1)
 
-					local Code = System.Parts.Modem:GetAsync(url)
+						local Code = System.Parts.Modem:GetAsync(url)
 
-					-- Warnings
-					if string.find(Code, "loadstring") then ConsoleWarn("Warning: 'loadstring' detected") end
-					if string.find(Code, "require") then ConsoleWarn("Warning: 'require' detected") end
-					if string.find(Code, "getfenv") then ConsoleWarn("Warning: 'getfenv' detected") end
+						local Code = formatcode(Code)
 
-					Code = string.gsub(Code, 'GetPartFromPort%(%d+,%s*"(.-)"%)', 'GetSuperPart("%1")')
-					Code = string.gsub(Code, 'GetPart%(%s*"(.-)"%)', 'GetSuperPart("%1")')
+						print("Executing Git Code:\n", Code)
+						local ok, err = pcall(function()
+							local thread = coroutine.create(function()
+								local func, loadErr = loadstring(Code)
+								if not func then error("Code failed to compile: " .. tostring(loadErr)) end
+								local success, execErr = pcall(func)
+								if not success then error("Code execution error: " .. tostring(execErr)) end
+							end)
 
-					Code = string.gsub(Code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'GetSuperParts("%1")')
-					Code = string.gsub(Code, 'GetParts%(%s*"(.-)"%)', 'GetSuperParts("%1")')
-
-					if not string.find(Code, "function GetSuperPart") then
-						local superPartDef = [[
-function GetSuperPart(PartName: string)
-	for port = 1, 20 do
-		local found = GetPartFromPort(port, PartName)
-		if found then return found end
-	end
-	local part = GetPart(PartName)
-	if part then return part end
-	return nil
-end
-
-function GetSuperParts(PartName: string)
-	for port = 1, 20 do
-		local found = GetPartsFromPort(port, PartName)
-		if found then return found end
-	end
-	local part = GetParts(PartName)
-	if part then return part end
-	return nil
-end
-]]
-						Code = superPartDef .. "\n" .. Code
-					end
-
-					print("Executing Git Code:\n", Code)
-					local ok, err = pcall(function()
-						local thread = coroutine.create(function()
-							local func, loadErr = loadstring(Code)
-							if not func then error("Code failed to compile: " .. tostring(loadErr)) end
-							local success, execErr = pcall(func)
-							if not success then error("Code execution error: " .. tostring(execErr)) end
+							table.insert(System.Threads, thread)
+							coroutine.resume(thread)
 						end)
 
-						table.insert(System.Threads, thread)
-						coroutine.resume(thread)
-					end)
-
-					if not ok then
-						Console("Coroutine start failed: " .. tostring(err))
-					else
-						Console("Git code executed.")
-					end
+						if not ok then
+							Console("Coroutine start failed: " .. tostring(err))
+						else
+							Console("Git code executed.")
+						end
 					else
 						Console("Path: "..path)
 						Console("Data: "..tostring(Data))
@@ -575,6 +480,98 @@ end
 			Restart()
 		end;
 	};
+	["power"] = {
+		description = "Show available commands.";
+		args = "";
+		execute = function(args)
+			Console("\nCURRENT POWER:")
+			local label = Console(tonumber(System.Parts.Instrument:GetReading("Power"),10))
+			local POWERTHREAD = coroutine.create(function()
+				while true do
+					wait(1)
+					ModifyConsoleLine(label, math.round(tonumber(System.Parts.Instrument:GetReading("Power"),10)))
+				end
+			end)
+			coroutine.resume(POWERTHREAD)
+			
+			table.insert(System.Threads, POWERTHREAD)
+		end;
+	};
+	["open"] = {
+		description = "opens app simpler but lacks disk selector";
+		args = "<Path>";
+		execute = function(args)
+			local path = args[1]
+			local Data = System.Files[path]
+			
+			local types = {
+				["txt"] = function(Data)
+					Console(Data)
+				end,
+				["lua"] = function(Data)
+					if string.find(Data,"https://raw.githubusercontent.com/") then
+						Console("Github File detected")
+						ConsoleWarn("WARNING: this requires a modem")
+						if not System.Parts.Modem then
+							Console("Modem Missing Cannot Run")
+							return
+						end
+
+						local url = Data
+						if not url then
+							Console("Usage: -r git <url>")
+							return
+						end
+
+						Console("Requesting Git Raw")
+						wait(1)
+
+						local Code = System.Parts.Modem:GetAsync(url)
+
+						local Code = formatcode(Code)
+
+						print("Executing Git Code:\n", Code)
+						local ok, err = pcall(function()
+							local thread = coroutine.create(function()
+								local func, loadErr = loadstring(Code)
+								if not func then error("Code failed to compile: " .. tostring(loadErr)) end
+								local success, execErr = pcall(func)
+								if not success then error("Code execution error: " .. tostring(execErr)) end
+							end)
+
+							table.insert(System.Threads, thread)
+							coroutine.resume(thread)
+						end)
+
+						if not ok then
+							Console("Coroutine start failed: " .. tostring(err))
+						else
+							Console("Git code executed.")
+						end
+					else
+						Console("Path: "..path)
+						Console("Data: "..tostring(Data))
+						RunFunction(tostring(Data))
+					end
+				end
+			}
+			
+			-- indentifies which type it is
+			local typed = string.match(path, "%.(%w+)$")
+			local func = types[typed]
+			if func then
+				func(Data)
+			else
+				ConsoleWarn("Unknown file type: "..typed)
+				Console(Data)
+			end
+			
+			if not Data then
+				ConsoleWarn(`Cannot find '{path}'`)
+				return
+			end
+		end;
+	};
 	["cease"] = {
 		description = "Show available commands.";
 		args = "";
@@ -632,6 +629,7 @@ end
 		}
 
 	};
+	
 	["modem"] = {
 		description = "modem libary";
 		args = "<subcommand>";
@@ -723,7 +721,7 @@ function MAINFRAMINI()
 		Rotation = 0;
 		CanvasSize = UDim2.fromScale(0.5,1);
 		AutomaticCanvasSize = Enum.AutomaticSize.Y;
-		BackgroundColor3 = Color3.fromRGB(16, 43, 70)
+		BackgroundColor3 = System.Configurables.BackgroundColor3
 	})
 
 	local UIListLayout = Screen:CreateElement("UIListLayout",{SortOrder = Enum.SortOrder.LayoutOrder}
@@ -735,9 +733,6 @@ end
 MAINFRAMINI()
 
 --Universal helpers
-function MirrorDataToFile()
-	System.Files = System.Parts.Disk:ReadAll()
-end
 
 function CheckPart(part)
 	if part then
@@ -769,7 +764,7 @@ function Console(TXT:string)
 		TextXAlignment = Enum.TextXAlignment.Left;
 		TextYAlignment = Enum.TextYAlignment.Top;
 		BackgroundColor3 = Color3.fromRGB(0,0,0);
-		TextColor3 = Color3.fromRGB(255,255,255);
+		TextColor3 = System.Configurables.ConsoleColor3;
 		AutomaticSize = Enum.AutomaticSize.Y;
 		BackgroundTransparency = 1;
 	})
@@ -783,7 +778,7 @@ function Console(TXT:string)
 end
 
 function ModifyConsoleLine(TextLabel:TextLabel,Text)
-	TextLabel = Text
+	TextLabel.Text = Text
 end
 
 function ConsoleWarn(TXT:string)
@@ -795,11 +790,12 @@ function ConsoleWarn(TXT:string)
 		Text = "> "..TXT;
 		TextWrapped = true;
 		Font = "Ubuntu";
+		RichText = true;
 		TextSize = 20;
 		TextXAlignment = Enum.TextXAlignment.Left;
 		TextYAlignment = Enum.TextYAlignment.Top;
 		BackgroundColor3 = Color3.fromRGB(0,0,0);
-		TextColor3 = Color3.fromRGB(255, 115, 0);
+		TextColor3 = System.Configurables.ConsoleWarningColor;
 		AutomaticSize = Enum.AutomaticSize.Y;
 		BackgroundTransparency = 1;
 	})
@@ -822,13 +818,55 @@ local function CheckPartAndDisplayOnConsole(Part:string)
 	Console(text)
 end
 
+function MirrorDataToFile()
+	System.Files = System.Parts.Disk:ReadAll()
+end
+
+function formatcode(Code:string)
+	-- Warnings
+	if string.find(Code, "loadstring") then ConsoleWarn("Warning: 'loadstring' detected") end
+	if string.find(Code, "require") then ConsoleWarn("Warning: 'require' detected") end
+	if string.find(Code, "getfenv") then ConsoleWarn("Warning: 'getfenv' detected") end
+
+	Code = string.gsub(Code, 'GetPartFromPort%(%d+,%s*"(.-)"%)', 'GetSuperPart("%1")')
+	Code = string.gsub(Code, 'GetPart%(%s*"(.-)"%)', 'GetSuperPart("%1")')
+
+	Code = string.gsub(Code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'GetSuperParts("%1")')
+	Code = string.gsub(Code, 'GetParts%(%s*"(.-)"%)', 'GetSuperParts("%1")')
+
+	if not string.find(Code, "function GetSuperPart") then
+		local superPartDef = [[
+function GetSuperPart(PartName: string)
+	for port = 1, 20 do
+		local found = GetPartFromPort(port, PartName)
+		if found then return found end
+	end
+	local part = GetPart(PartName)
+	if part then return part end
+	return nil
+end
+
+function GetSuperParts(PartName: string)
+	for port = 1, 20 do
+		local found = GetPartsFromPort(port, PartName)
+		if found then return found end
+	end
+	local part = GetParts(PartName)
+	if part then return part end
+	return nil
+end
+]]
+		Code = superPartDef .. "\n" .. Code
+		
+		return Code
+	end
+end
+
 
 local function Mainloop()
 	while task.wait(1) do
 	end
 end
-
---boot up
 
 local Success, Error = pcall(function()
 	Console("Checking...")
@@ -891,15 +929,23 @@ local Success, Error = pcall(function()
 		ConsoleWarn("WARNING: NO KEYBOARD CONNECTED")
 	end
 	Console("Writing neccesary programs on disk")
+	
+	local NativePrograms = {
+		["/Clock.lua"] = "https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
+		["/Radar.lua"] = "https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
+		["/Text.txt"] = "Hi there";
+	}
 
-	System.Parts.Disk:Write("/Clock","https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua")
+	for Path, Data in NativePrograms do
+		System.Parts.Disk:Write(Path,Data)
+	end
 
 	Console("Checking Files")
 	MirrorDataToFile()
 
 	Console("---------------------")
 	for Path, Data in System.Files do
-		Console(`{Path}: {Data}`)
+		Console(`{Path}`)
 	end
 	Console("---------------------")
 
@@ -909,8 +955,6 @@ local Success, Error = pcall(function()
 	Mainloop()
 end)
 
-
--- error catcher
 if Success == false then
 	Console(Error)
 end
