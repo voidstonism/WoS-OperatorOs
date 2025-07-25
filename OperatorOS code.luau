@@ -505,10 +505,10 @@ local Commands = {
 			local Data = System.Files[path]
 			
 			local types = {
-				["txt"] = function(Data)
+				["t:txt/"] = function(Data)
 					Console(Data)
 				end,
-				["lua"] = function(Data)
+				["t:lua/"] = function(Data)
 					if string.find(Data,"https://raw.githubusercontent.com/") then
 						Console("Github File detected")
 						ConsoleWarn("WARNING: this requires a modem")
@@ -557,18 +557,21 @@ local Commands = {
 			}
 			
 			-- indentifies which type it is
-			local typed = string.match(path, "%.(%w+)$")
-			local func = types[typed]
-			if func then
-				func(Data)
+
+			local typeTag, data = string.match(Data, "^(t:[^/]+/)(.+)")
+
+			if typeTag and data then
+				print("Type:", typeTag)  -- t:lua/
+				print("Data:", data)     -- print('Hello from raw code!')
+
+				if types[typeTag] then
+					types[typeTag](data)
+				else
+					ConsoleWarn("Unknown type: " .. typeTag)
+				end
 			else
-				ConsoleWarn("Unknown file type: "..typed)
-				Console(Data)
-			end
-			
-			if not Data then
-				ConsoleWarn(`Cannot find '{path}'`)
-				return
+				ConsoleWarn("Input format not recognized.")
+				print(Data)
 			end
 		end;
 	};
@@ -931,8 +934,8 @@ local Success, Error = pcall(function()
 	Console("Writing neccesary programs on disk")
 	
 	local NativePrograms = {
-		["/Clock.lua"] = "https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
-		["/Radar.lua"] = "https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
+		["/Clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
+		["/Radar"] = "t:lua/https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
 		["/Text.txt"] = "Hi there";
 	}
 
