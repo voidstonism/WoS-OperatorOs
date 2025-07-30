@@ -382,6 +382,19 @@ local Commands = {
 			Console(table.concat(args, " "))
 		end;
 	};
+	["files"] = {
+		description = "Prints in console.";
+		args = "";
+		execute = function(args)
+			MirrorDataToFile()
+
+			Console("---------------------")
+			for Path, Data in System.Files do
+				Console(`{Path}`)
+			end
+			Console("---------------------")
+		end;
+	};
 	["fetch"] = {
 		description = "Display system info";
 		args = "";
@@ -473,7 +486,7 @@ local Commands = {
 			GetSuperPart("Microcontroller"):Shutdown()
 		end;
 	};
-	["restart"] = {
+	["reboot"] = {
 		description = "Show available commands.";
 		args = "";
 		execute = function(args)
