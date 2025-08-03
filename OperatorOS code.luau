@@ -296,6 +296,23 @@ local Commands = {
 			Console(`Saved to disk: {filename} : {content}`)
 		end;
 	};
+	["wp"] = {
+		description = "writes other programs";
+		args = "";
+		execute = function(args)
+			Console("Writing neccesary programs on disk")
+	
+	local NativePrograms = {
+		["/Clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
+		["/Radar"] = "t:lua/https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
+		["/Text.txt"] = "Hi there";
+	}
+
+	for Path, Data in NativePrograms do
+		System.Parts.Disk:Write(Path,Data)
+	end
+		end;
+	};
 	["read"] = {
 		description = "Reads Disk -- more advanced than open";
 		args = "<subcommand> <Disk> <Key_OR_Path> <Name>";
@@ -775,6 +792,7 @@ function Console(TXT:string)
 		AnchorPoint = Vector2.new(0,0);
 		Text = "> "..TXT;
 		TextWrapped = true;
+		RichText = true;
 		Font = "Ubuntu";
 		TextSize = 20;
 		TextXAlignment = Enum.TextXAlignment.Left;
@@ -944,7 +962,7 @@ local Success, Error = pcall(function()
 	else
 		ConsoleWarn("WARNING: NO KEYBOARD CONNECTED")
 	end
-	Console("Writing neccesary programs on disk")
+	--[[Console("Writing neccesary programs on disk")
 	
 	local NativePrograms = {
 		["/Clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
@@ -955,6 +973,8 @@ local Success, Error = pcall(function()
 	for Path, Data in NativePrograms do
 		System.Parts.Disk:Write(Path,Data)
 	end
+
+	]]
 
 	Console("Checking Files")
 	MirrorDataToFile()
