@@ -1,6 +1,6 @@
-function GetSuperPart(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
+function FindPart(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
 
---function GetSuperPart(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
+--function FindParts(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
 
 
 function Restart()
@@ -14,7 +14,7 @@ end
 
 
 --Voiv'y's simple OS
-local Screen = GetSuperPart("Screen") or GetSuperPart("TouchScreen")
+local Screen = FindPart("Screen") or FindPart("TouchScreen")
 
 local PartstoGet = {
 	"Keyboard" ;
@@ -301,16 +301,16 @@ local Commands = {
 		args = "";
 		execute = function(args)
 			Console("Writing neccesary programs on disk")
-	
-	local NativePrograms = {
-		["/Clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
-		["/Radar"] = "t:lua/https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
-		["/Text.txt"] = "Hi there";
-	}
 
-	for Path, Data in NativePrograms do
-		System.Parts.Disk:Write(Path,Data)
-	end
+			local NativePrograms = {
+				["/Clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
+				["/Radar"] = "t:lua/https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
+				["/Text.txt"] = "Hi there";
+			}
+
+			for Path, Data in NativePrograms do
+				System.Parts.Disk:Write(Path,Data)
+			end
 		end;
 	};
 	["read"] = {
@@ -523,7 +523,7 @@ local Commands = {
 				end
 			end)
 			coroutine.resume(POWERTHREAD)
-			
+
 			table.insert(System.Threads, POWERTHREAD)
 		end;
 	};
@@ -533,7 +533,7 @@ local Commands = {
 		execute = function(args)
 			local path = args[1]
 			local Data = System.Files[path]
-			
+
 			local types = {
 				["t:txt/"] = function(Data)
 					Console(Data)
@@ -585,7 +585,7 @@ local Commands = {
 					end
 				end
 			}
-			
+
 			-- indentifies which type it is
 
 			local typeTag, data = string.match(Data, "^(t:[^/]+/)(.+)")
@@ -662,7 +662,7 @@ local Commands = {
 		}
 
 	};
-	
+
 	["modem"] = {
 		description = "modem libary";
 		args = "<subcommand>";
@@ -732,6 +732,7 @@ local Commands = {
 	};
 }
 
+
 function GetCommands()
 	return Commands
 end
@@ -784,64 +785,43 @@ function RunFunction(code)
 	coroutine.resume(Thread)
 end
 
-function Console(TXT:string)
-	local label = Screen:CreateElement("TextLabel", {
-		Name = "> "..TXT;
-		Size = UDim2.fromScale(1, 0);
-		Position = UDim2.fromScale(0, 0);
-		AnchorPoint = Vector2.new(0,0);
-		Text = "> "..TXT;
-		TextWrapped = true;
-		RichText = true;
-		Font = "Ubuntu";
-		TextSize = 20;
-		TextXAlignment = Enum.TextXAlignment.Left;
-		TextYAlignment = Enum.TextYAlignment.Top;
-		BackgroundColor3 = Color3.fromRGB(0,0,0);
-		TextColor3 = System.Configurables.ConsoleColor3;
-		AutomaticSize = Enum.AutomaticSize.Y;
-		BackgroundTransparency = 1;
-	})
 
-	label.Parent = MAINFRAME
-	table.insert(TerminalTextLabels, label) -- 👈 insert into numeric table
-
-	print(TXT)
-
-	return label -- OPTIONAL
-end
 
 function ModifyConsoleLine(TextLabel:TextLabel,Text)
 	TextLabel.Text = Text
 end
-
-function ConsoleWarn(TXT:string)
+-- Console printing
+function Console(TXT: string, TxtColor: Color3?)
 	local label = Screen:CreateElement("TextLabel", {
-		Name = "> "..TXT;
-		Size = UDim2.fromScale(1, 0);
-		Position = UDim2.fromScale(0, 0);
-		AnchorPoint = Vector2.new(0,0);
-		Text = "> "..TXT;
-		TextWrapped = true;
-		Font = "Ubuntu";
-		RichText = true;
-		TextSize = 20;
-		TextXAlignment = Enum.TextXAlignment.Left;
-		TextYAlignment = Enum.TextYAlignment.Top;
-		BackgroundColor3 = Color3.fromRGB(0,0,0);
-		TextColor3 = System.Configurables.ConsoleWarningColor;
-		AutomaticSize = Enum.AutomaticSize.Y;
-		BackgroundTransparency = 1;
+		Name = "> " .. TXT,
+		Size = UDim2.fromScale(1, 0),
+		Position = UDim2.fromScale(0, 0),
+		AnchorPoint = Vector2.new(0, 0),
+		Text = "> " .. TXT,
+		TextWrapped = true,
+		RichText = true,
+		Font = "Ubuntu",
+		TextSize = 20,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+		TextColor3 = TxtColor or System.Configurables.ConsoleColor3,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1
 	})
 
 	label.Parent = MAINFRAME
-	table.insert(TerminalTextLabels, label) -- 👈 insert into numeric table
-
+	table.insert(TerminalTextLabels, label)
 	print(TXT)
+	return label
+end
+
+function ConsoleWarn(TXT: string)
+	Console(TXT, System.Configurables.ConsoleWarningColor)
 end
 
 local function CheckPartAndDisplayOnConsole(Part:string)
-	local PartObj = GetSuperPart(Part)
+	local PartObj = FindPart(Part)
 	local Boolean, text = CheckPart(PartObj)
 
 	if Boolean then
@@ -862,15 +842,15 @@ function formatcode(Code:string)
 	if string.find(Code, "require") then ConsoleWarn("Warning: 'require' detected") end
 	if string.find(Code, "getfenv") then ConsoleWarn("Warning: 'getfenv' detected") end
 
-	Code = string.gsub(Code, 'GetPartFromPort%(%d+,%s*"(.-)"%)', 'GetSuperPart("%1")')
-	Code = string.gsub(Code, 'GetPart%(%s*"(.-)"%)', 'GetSuperPart("%1")')
+	Code = string.gsub(Code, 'GetPartFromPort%(%d+,%s*"(.-)"%)', 'FindPart("%1")')
+	Code = string.gsub(Code, 'GetPart%(%s*"(.-)"%)', 'FindPart("%1")')
 
-	Code = string.gsub(Code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'GetSuperParts("%1")')
-	Code = string.gsub(Code, 'GetParts%(%s*"(.-)"%)', 'GetSuperParts("%1")')
+	Code = string.gsub(Code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'FindParts("%1")')
+	Code = string.gsub(Code, 'GetParts%(%s*"(.-)"%)', 'FindParts("%1")')
 
-	if not string.find(Code, "function GetSuperPart") then
+	if not string.find(Code, "function FindPart") then
 		local superPartDef = [[
-function GetSuperPart(PartName: string)
+function FindPart(PartName: string)
 	for port = 1, 20 do
 		local found = GetPartFromPort(port, PartName)
 		if found then return found end
@@ -880,7 +860,7 @@ function GetSuperPart(PartName: string)
 	return nil
 end
 
-function GetSuperParts(PartName: string)
+function FindParts(PartName: string)
 	for port = 1, 20 do
 		local found = GetPartsFromPort(port, PartName)
 		if found then return found end
@@ -906,20 +886,26 @@ local Success, Error = pcall(function()
 	Console("Checking...")
 	Beep()
 
-	for i, Name in PartstoGet do
-		print("Checking part:", tostring(Name))
-		CheckPartAndDisplayOnConsole(Name)
-		wait(0.05)
+	for _, PartName in ipairs(PartstoGet) do
+		local part = FindPart(PartName)
+		if part then
+			System.Parts[PartName] = part
+			Console(`[<b>OK</b>] {PartName}`)
+		else
+			Console(`[<b>MISSING</b>] {PartName}`)
+		end
 	end
 
+
 	-- ConnectKeyboard
-	Console("Connecting Keyboard")
+	Console("[<b>Connecting</b>] Keyboard")
 
 	if System.Parts.Keyboard then
 		System.Parts.Keyboard.TextInputted:Connect(function(txt)
 			--Handle Mulitple commands such as &&
 			txt = tostring(txt:gsub("\n", ""))
-			Console(txt)
+			Console(`┌ROOT@LocalHost`)
+			Console(`└{txt}`)
 
 			local CommandsTable = txt:split(" && ")
 
@@ -960,23 +946,10 @@ local Success, Error = pcall(function()
 			end
 		end)
 	else
-		ConsoleWarn("WARNING: NO KEYBOARD CONNECTED")
-	end
-	--[[Console("Writing neccesary programs on disk")
-	
-	local NativePrograms = {
-		["/Clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
-		["/Radar"] = "t:lua/https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
-		["/Text.txt"] = "Hi there";
-	}
-
-	for Path, Data in NativePrograms do
-		System.Parts.Disk:Write(Path,Data)
+		ConsoleWarn("[<b>ERROR</b>] Keyboard Missing")
 	end
 
-	]]
-
-	Console("Checking Files")
+	Console("[<b>FILES</b>]")
 	MirrorDataToFile()
 
 	Console("---------------------")
@@ -985,7 +958,7 @@ local Success, Error = pcall(function()
 	end
 	Console("---------------------")
 
-	Console("Ready!")
+	Console("[<b>READY</b>]")
 
 
 	Mainloop()
