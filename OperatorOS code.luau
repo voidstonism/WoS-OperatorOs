@@ -1,6 +1,6 @@
 function FindPart(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
 
-function FindParts(PartName: string)for port = 1, 20 do local found = GetPartsFromPort(port, PartName)if found then return found end end local part = GetParts(PartName)if part then return part end return nil end
+--function FindParts(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
 
 
 function Restart()
@@ -14,10 +14,11 @@ end
 
 
 --Voiv'y's simple OS
-local screens = FindParts("Screen") or FindParts("TouchScreen")
+local Screen = FindPart("Screen") or FindPart("TouchScreen")
 
 local PartstoGet = {
 	"Keyboard" ;
+
 	"Disk";
 	"Modem";
 	"LifeSensor";
@@ -40,7 +41,7 @@ local System ={
 	};
 }
 
-local MAINFRAMES = {}
+local MAINFRAME
 --Cache
 local TerminalTextLabels = {}
 
@@ -599,8 +600,8 @@ local Commands = {
 					ConsoleWarn("Unknown type: " .. typeTag)
 				end
 			else
-				ConsoleWarn("Input format not recognized. Outputting raw data:")
-				Console(Data)
+				ConsoleWarn("Input format not recognized.")
+				print(Data)
 			end
 		end;
 	};
@@ -747,8 +748,7 @@ function ReadData(Disk,Key_OR_Path)
 end
 
 function MAINFRAMINI()
-	for i, Screen in screens do 
-		local MAINFRAME = Screen:CreateElement('ScrollingFrame',{
+	MAINFRAME = Screen:CreateElement('ScrollingFrame',{
 		Size = UDim2.fromScale(1, 1);
 		Position = UDim2.fromScale(0, 0);
 		AnchorPoint = Vector2.new(0,0);
@@ -756,15 +756,12 @@ function MAINFRAMINI()
 		CanvasSize = UDim2.fromScale(0.5,1);
 		AutomaticCanvasSize = Enum.AutomaticSize.Y;
 		BackgroundColor3 = System.Configurables.BackgroundColor3
-		})
+	})
 
-		local UIListLayout = Screen:CreateElement("UIListLayout",{SortOrder = Enum.SortOrder.LayoutOrder}
-		)
+	local UIListLayout = Screen:CreateElement("UIListLayout",{SortOrder = Enum.SortOrder.LayoutOrder}
+	)
 
-		UIListLayout.Parent = MAINFRAME
-
-		MAINFRAMES["MAINFRAME"..i] = MAINFRAME
-	end
+	UIListLayout.Parent = MAINFRAME
 end
 
 MAINFRAMINI()
@@ -795,8 +792,7 @@ function ModifyConsoleLine(TextLabel:TextLabel,Text)
 end
 -- Console printing
 function Console(TXT: string, TxtColor: Color3?)
-	for i, Screen in screens do
-		local label = Screen:CreateElement("TextLabel", {
+	local label = Screen:CreateElement("TextLabel", {
 		Name = "> " .. TXT,
 		Size = UDim2.fromScale(1, 0),
 		Position = UDim2.fromScale(0, 0),
@@ -812,10 +808,9 @@ function Console(TXT: string, TxtColor: Color3?)
 		TextColor3 = TxtColor or System.Configurables.ConsoleColor3,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1
-		})
+	})
 
-		label.Parent = MAINFRAMES["MAINFRAME"..i]
-	end
+	label.Parent = MAINFRAME
 	table.insert(TerminalTextLabels, label)
 	print(TXT)
 	return label
