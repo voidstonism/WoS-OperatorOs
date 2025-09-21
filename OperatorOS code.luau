@@ -14,7 +14,26 @@ end
 
 
 --Voiv'y's simple OS
-local screens = FindParts("TouchScreen")
+local screens = {}
+
+--GetScreens
+local function GetScreens()
+	local RegScren = FindParts("Screen")
+	local touch = FindParts("TouchScreen")
+	
+	if RegScren ~= nil then
+		for _, s in RegScren do
+			table.insert(screens, s)
+		end
+	end
+	if touch ~= nil then
+		for _, s in touch do
+			table.insert(screens, s)
+		end
+	end
+end
+
+GetScreens()
 
 local PartstoGet = {
 	"Keyboard" ;
@@ -651,7 +670,7 @@ local Commands = {
 
 
 						-- Optional: Clear all UI or reset terminal
-						
+
 						MAINFRAMINI()
 						Console("All Threads have been ceased restarter required")
 					end
@@ -753,13 +772,13 @@ function MAINFRAMINI()
 	for i, Screen1 in screens do 
 		print(i)
 		local frame = Screen1:CreateElement('ScrollingFrame',{
-		Size = UDim2.fromScale(1, 1);
-		Position = UDim2.fromScale(0, 0);
-		AnchorPoint = Vector2.new(0,0);
-		Rotation = 0;
-		CanvasSize = UDim2.fromScale(0.5,1);
-		AutomaticCanvasSize = Enum.AutomaticSize.Y;
-		BackgroundColor3 = System.Configurables.BackgroundColor3
+			Size = UDim2.fromScale(1, 1);
+			Position = UDim2.fromScale(0, 0);
+			AnchorPoint = Vector2.new(0,0);
+			Rotation = 0;
+			CanvasSize = UDim2.fromScale(0.5,1);
+			AutomaticCanvasSize = Enum.AutomaticSize.Y;
+			BackgroundColor3 = System.Configurables.BackgroundColor3
 		})
 
 		local UIListLayout = Screen1:CreateElement("UIListLayout",{SortOrder = Enum.SortOrder.LayoutOrder}
@@ -803,21 +822,21 @@ function Console(TXT: string, TxtColor: Color3?)
 	local label
 	for i, Screen1 in screens do
 		label = Screen1:CreateElement("TextLabel", {
-		Name = "> " .. TXT,
-		Size = UDim2.fromScale(1, 0),
-		Position = UDim2.fromScale(0, 0),
-		AnchorPoint = Vector2.new(0, 0),
-		Text = "> " .. TXT,
-		TextWrapped = true,
-		RichText = true,
-		Font = "Ubuntu",
-		TextSize = 20,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextYAlignment = Enum.TextYAlignment.Top,
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-		TextColor3 = TxtColor or System.Configurables.ConsoleColor3,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundTransparency = 1
+			Name = "> " .. TXT,
+			Size = UDim2.fromScale(1, 0),
+			Position = UDim2.fromScale(0, 0),
+			AnchorPoint = Vector2.new(0, 0),
+			Text = "> " .. TXT,
+			TextWrapped = true,
+			RichText = true,
+			Font = "Ubuntu",
+			TextSize = 20,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+			TextColor3 = TxtColor or System.Configurables.ConsoleColor3,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1
 		})
 
 		label.Parent = MainFrames["MainFrames"..i]
@@ -882,7 +901,7 @@ function FindParts(PartName: string)
 end
 ]]
 		Code = superPartDef .. "\n" .. Code
-		
+
 		return Code
 	end
 end
