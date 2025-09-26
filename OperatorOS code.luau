@@ -298,13 +298,13 @@ local Commands = {
 		description = "Saves to disk";
 		args = "<Disk> <Key_OR_Path> <Name> <Data>";
 		execute = function(args)
-			local disk = System.Parts[args[1]]
+			local disk = System.Parts.Disk
 			if not disk then
 				ConsoleWarn("Disk not found: " .. tostring(args[1]))
 				return
 			end
 
-			Console("Disk found:", disk)
+			Console(`Disk: {disk}`)
 
 			-- Combine args[2] and args[3] to make a filename
 			local filename = (args[2] or "") .. (args[3] or "")
