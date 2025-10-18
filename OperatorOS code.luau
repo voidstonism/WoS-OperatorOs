@@ -688,7 +688,7 @@ local Commands = {
 		description = "modem libary";
 		args = "<subcommand>";
 		subcommands = {
-			["sendmessage"] = {
+			["-sm"] = {
 				args = "<Message>";
 				execute = function(args)
 					if not System.Parts.Modem then
@@ -696,6 +696,51 @@ local Commands = {
 						return
 					end
 					System.Parts.Modem:SendMessage(table.concat(args, " ", 1))	
+				end;
+			};
+			["-smmc"] = {
+				args = "<Message>";
+				execute = function(args)
+					
+					local function GenerateID()
+						local ID = "MID:"
+
+						for i = 1, 7 do
+							ID = ID..tostring(math.random(0,9))
+						end
+
+						return ID
+					end
+
+					
+					if not System.Parts.Modem then
+						ConsoleWarn("Modem Missing")
+						return
+					end
+					
+					local text = `{GenerateID()} OperatorOS | {string.gsub(table.concat(args, " ", 1),"\n","")}`
+					
+					System.Parts.Modem:SendMessage(text)	
+				end;
+			};
+			["-smdos"] = {
+				args = "<Message> <Channel>";
+				execute = function(args)
+					if not System.Parts.Modem then
+						ConsoleWarn("Modem Missing")
+						return
+					end
+					local Table = {
+						type = "TEXT_MESSAGE",
+						UNIQUE_ID = math.random(1,100000000),
+						sender = "MODEMCOM51",
+						timestamp = DateTime.now().UnixTimestamp,
+						content = table.concat(args, " ", 1),
+						target_channel_id = args[#args] or "General",
+					}
+					
+					print(args[#args])
+					System.Parts.Modem:SendMessage(JSONEncode(Table),args[#args] or "M1")	
 				end;
 			};
 			["postasync"] = {
@@ -717,9 +762,17 @@ local Commands = {
 					end
 					System.Connections.ModemConnect = System.Parts.Modem.MessageSent:Connect(function(msg)
 						local msgid = string.match(msg, "MID:%d%d%d%d%d%d%d") -- voidstonism message id format for modemcom
+						
+						local success, Jsonfile = pcall(function()
+							return JSONDecode(msg)
+						end)
 
 						if msgid then
 							Console(`{System.Parts.Modem.NetworkID}: {string.gsub(msg, "MID:%d%d%d%d%d%d%d ", "")}`)
+						elseif success and Jsonfile then
+							if Jsonfile.type == "TEXT_MESSAGE" then
+								Console(`{System.Parts.Modem.NetworkID}: {Jsonfile.sender}: {Jsonfile.content}`)
+							end
 						else
 							Console(`{System.Parts.Modem.NetworkID}: {msg}`)
 						end
@@ -880,9 +933,25 @@ function formatcode(Code:string)
 
 	if not string.find(Code, "function FindPart") then
 		local superPartDef = [[
-function FindPart(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
+function FindPart(PartName: string)
+	for port = 1, 20 do
+		local found = GetPartFromPort(port, PartName)
+		if found then return found end
+	end
+	local part = GetPart(PartName)
+	if part then return part end
+	return nil
+end
 
-function FindParts(PartName: string)for port = 1, 20 do local found = GetPartsFromPort(port, PartName)if next(found) ~= nil then return found end end local part = GetParts(PartName)if next(part) ~= nil then return part end return nil end
+function FindParts(PartName: string)
+	for port = 1, 20 do
+		local found = GetPartsFromPort(port, PartName)
+		if found then return found end
+	end
+	local part = GetParts(PartName)
+	if part then return part end
+	return nil
+end
 ]]
 		Code = superPartDef .. "\n" .. Code
 
