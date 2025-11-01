@@ -730,17 +730,27 @@ local Commands = {
 						ConsoleWarn("Modem Missing")
 						return
 					end
+
+					local msg = table.concat(args, " ", 2)
+					local ChannelID = args[1]
+
+					if ChannelID == "_" then
+						ChannelID = "dOS-General"
+					end
+
+					msg:gsub(ChannelID, "")
+
 					local Table = {
 						type = "TEXT_MESSAGE",
 						UNIQUE_ID = math.random(1,100000000),
 						sender = "MODEMCOM51",
 						timestamp = DateTime.now().UnixTimestamp,
-						content = table.concat(args, " ", 1),
-						target_channel_id = args[#args] or "General",
+						content = msg,
+						target_channel_id = ChannelID,
 					}
 					
-					print(args[#args])
-					System.Parts.Modem:SendMessage(JSONEncode(Table),args[#args] or "M1")	
+					print(ChannelID)
+					System.Parts.Modem:SendMessage(JSONEncode(Table))	
 				end;
 			};
 			["postasync"] = {
@@ -753,7 +763,7 @@ local Commands = {
 					System.Parts.Modem:PostAsync(args[1] or nil,args[2] or nil,args[3] or nil,args[4] or nil,args[5] or nil)	
 				end;
 			};
-			["connect"] = {
+			["-c"] = {
 				args = "";
 				execute = function(args)
 					if not System.Parts.Modem then
@@ -772,6 +782,7 @@ local Commands = {
 						elseif success and Jsonfile then
 							if Jsonfile.type == "TEXT_MESSAGE" then
 								Console(`{System.Parts.Modem.NetworkID}: {Jsonfile.sender}: {Jsonfile.content}`)
+								print(Jsonfile.target_channel_id)
 							end
 						else
 							Console(`{System.Parts.Modem.NetworkID}: {msg}`)
@@ -780,7 +791,7 @@ local Commands = {
 					ConsoleWarn(`Connected. Modem ID is {System.Parts.Modem.NetworkID}`)
 				end;
 			};
-			["disconnect"] = {
+			["-dc"] = {
 				args = "";
 				execute = function(args)
 					if not System.Parts.Modem then
