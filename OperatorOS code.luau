@@ -944,25 +944,8 @@ function formatcode(Code:string)
 
 	if not string.find(Code, "function FindPart") then
 		local superPartDef = [[
-function FindPart(PartName: string)
-	for port = 1, 20 do
-		local found = GetPartFromPort(port, PartName)
-		if found then return found end
-	end
-	local part = GetPart(PartName)
-	if part then return part end
-	return nil
-end
-
-function FindParts(PartName: string)
-	for port = 1, 20 do
-		local found = GetPartsFromPort(port, PartName)
-		if found then return found end
-	end
-	local part = GetParts(PartName)
-	if part then return part end
-	return nil
-end
+function FindPart(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
+function FindParts(PartName: string)for port = 1, 20 do local found = GetPartsFromPort(port, PartName)if next(found) ~= nil then return found end end local part = GetParts(PartName)if next(part) ~= nil then return part end return nil end
 ]]
 		Code = superPartDef .. "\n" .. Code
 
