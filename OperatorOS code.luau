@@ -1,6 +1,6 @@
-function FindPart(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
+function FindPart(PartName: string)for _,  port in GetPorts() do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
 
-function FindParts(PartName: string)for port = 1, 20 do local found = GetPartsFromPort(port, PartName)if next(found) ~= nil then return found end end local part = GetParts(PartName)if next(part) ~= nil then return part end return nil end
+function FindParts(PartName: string)for _, port in GetPorts() do local found = GetPartsFromPort(port, PartName)if next(found) ~= nil then return found end end local part = GetParts(PartName)if next(part) ~= nil then return part end return nil end
 
 
 function Restart()
@@ -220,9 +220,9 @@ local Commands = {
 				execute = function(args)
 					local code = table.concat(args, " ")
 
-					if GetSuperPart("Microcontroller") then
+					if FindPart("Microcontroller") then
 						Console("procedding with update")
-						GetSuperPart("Microcontroller").Code = code
+						FindPart("Microcontroller").Code = code
 						Console("attempting to restart, if it doesnt restart, please do so manually")
 						Restart()
 					else
