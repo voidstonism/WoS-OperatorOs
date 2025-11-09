@@ -20,7 +20,7 @@ local screens = {}
 local function GetScreens()
 	local RegScren = FindParts("Screen")
 	local touch = FindParts("TouchScreen")
-	
+
 	if RegScren ~= nil then
 		for _, s in RegScren do
 			table.insert(screens, s)
@@ -94,7 +94,7 @@ local Commands = {
 			};
 
 			["git"] = {
-				description = "Simulate fetching and executing code from a git URL.";
+				description = "fetching and executing code from a git URL.";
 				execute = function(args)
 					ConsoleWarn("WARNING: this requires a modem")
 					if not System.Parts.Modem then
@@ -288,14 +288,14 @@ local Commands = {
 		end;
 	};	
 	["wait"] = {
-		description = "Clear the terminal screen.";
+		description = "wait [time]";
 		args = "<wait_time>";
 		execute = function(args)
 			wait(args[1])
 		end;
 	};
 	["write"] = {
-		description = "Saves to disk";
+		description = "Saves to disk e.x. use t:lua/ to write code that can be executed | Example: write Disk / puter t:lua/gitfile";
 		args = "<Disk> <Key_OR_Path> <Name> <Data>";
 		execute = function(args)
 			local disk = System.Parts.Disk
@@ -336,59 +336,84 @@ local Commands = {
 	};
 	["read"] = {
 		description = "Reads Disk -- more advanced than open";
-		args = "<subcommand> <Disk> <Key_OR_Path> <Name>";
+		args = "<subcommand> <Disk> <Name>";
 		subcommands = {
 			["run"] = {
 				execute = function(args)
 					local disk = System.Parts[args[1]]
-					local path = args[2]..args[3]
+					local path = args[2]
 					local Data = ReadData(disk,path)
 					--check if its a github raw
-					if string.find(Data,"https://raw.githubusercontent.com/") then
-						Console("Github File detected")
-						ConsoleWarn("WARNING: this requires a modem")
-						if not System.Parts.Modem then
-							Console("Modem Missing Cannot Run")
-							return
+					local types = {
+						["t:txt/"] = function(Data)
+							Console(Data)
+						end,
+						["t:lua/"] = function(Data)
+							if string.find(Data,"https://raw.githubusercontent.com/") then
+								Console("Github File detected")
+								ConsoleWarn("WARNING: this requires a modem")
+								if not System.Parts.Modem then
+									Console("Modem Missing Cannot Run")
+									return
+								end
+
+								local url = Data
+								if not url then
+									Console("Usage: -r git <url>")
+									return
+								end
+
+								Console("Requesting Git Raw")
+								wait(1)
+
+								local Code = System.Parts.Modem:GetAsync(url)
+
+								local Code = formatcode(Code)
+
+								print("Executing Git Code:\n", Code)
+								local ok, err = pcall(function()
+									local thread = coroutine.create(function()
+										local func, loadErr = loadstring(Code)
+										if not func then error("Code failed to compile: " .. tostring(loadErr)) end
+										local success, execErr = pcall(func)
+										if not success then error("Code execution error: " .. tostring(execErr)) end
+									end)
+
+									table.insert(System.Threads, thread)
+									coroutine.resume(thread)
+								end)
+
+								if not ok then
+									Console("Coroutine start failed: " .. tostring(err))
+								else
+									Console("Git code executed.")
+								end
+							else
+								Console("Path: "..path)
+								Console("Data: "..tostring(Data))
+								RunFunction(tostring(Data))
+							end
 						end
+					}
 
-						local url = Data
-						if not url then
-							Console("Usage: -r git <url>")
-							return
-						end
+					-- indentifies which type it is
 
-						Console("Requesting Git Raw")
-						wait(1)
+					local typeTag, data = string.match(Data, "^(t:[^/]+/)(.+)")
 
-						local Code = System.Parts.Modem:GetAsync(url)
+					if typeTag and data then
+						print("Type:", typeTag)  -- t:lua/
+						print("Data:", data)     -- print('Hello from raw code!')
 
-						local Code = formatcode(Code)
-
-						print("Executing Git Code:\n", Code)
-						local ok, err = pcall(function()
-							local thread = coroutine.create(function()
-								local func, loadErr = loadstring(Code)
-								if not func then error("Code failed to compile: " .. tostring(loadErr)) end
-								local success, execErr = pcall(func)
-								if not success then error("Code execution error: " .. tostring(execErr)) end
-							end)
-
-							table.insert(System.Threads, thread)
-							coroutine.resume(thread)
-						end)
-
-						if not ok then
-							Console("Coroutine start failed: " .. tostring(err))
+						if types[typeTag] then
+							types[typeTag](data)
 						else
-							Console("Git code executed.")
+							ConsoleWarn("Unknown type: " .. typeTag)
 						end
 					else
-						Console("Path: "..path)
-						Console("Data: "..tostring(Data))
-						RunFunction(tostring(Data))
+						ConsoleWarn("Input format not recognized. Attempting to run.")
+						ConsoleWarn(Data)
+						RunFunction(Data)
 					end
-
 				end;
 			};
 			["print"] = {
@@ -490,6 +515,14 @@ local Commands = {
 				ConsoleWarn(args[1])
 			end
 
+		end;
+	};
+	["cleandisk"] = {
+		description = "Cleans Disk";
+		args = "<PartName>";
+		execute = function(args)
+			System.Parts.Disk:Clear()
+			ConsoleWarn("DISK CLEARED")
 		end;
 	};
 	["removepart"] = {
@@ -701,7 +734,7 @@ local Commands = {
 			["-smmc"] = {
 				args = "<Message>";
 				execute = function(args)
-					
+
 					local function GenerateID()
 						local ID = "MID:"
 
@@ -712,14 +745,14 @@ local Commands = {
 						return ID
 					end
 
-					
+
 					if not System.Parts.Modem then
 						ConsoleWarn("Modem Missing")
 						return
 					end
-					
+
 					local text = `{GenerateID()} OperatorOS | {string.gsub(table.concat(args, " ", 1),"\n","")}`
-					
+
 					System.Parts.Modem:SendMessage(text)	
 				end;
 			};
@@ -748,7 +781,7 @@ local Commands = {
 						content = msg,
 						target_channel_id = ChannelID,
 					}
-					
+
 					print(ChannelID)
 					System.Parts.Modem:SendMessage(JSONEncode(Table))	
 				end;
@@ -772,7 +805,7 @@ local Commands = {
 					end
 					System.Connections.ModemConnect = System.Parts.Modem.MessageSent:Connect(function(msg)
 						local msgid = string.match(msg, "MID:%d%d%d%d%d%d%d") -- voidstonism message id format for modemcom
-						
+
 						local success, Jsonfile = pcall(function()
 							return JSONDecode(msg)
 						end)
