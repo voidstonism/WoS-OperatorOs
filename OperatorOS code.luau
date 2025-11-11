@@ -382,7 +382,7 @@ local Commands = {
 			}
 
 			for Path, Data in NativePrograms do
-				System.Parts.Disk1.Disk:Write(Path,Data)
+				System.Disk1.Disk:Write(Path,Data)
 			end
 		end;
 	};
