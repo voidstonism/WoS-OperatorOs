@@ -1,5 +1,4 @@
 function FindPart(PartName: string)for _,  port in GetPorts() do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
-
 function FindParts(PartName: string)for _, port in GetPorts() do local found = GetPartsFromPort(port, PartName)if next(found) ~= nil then return found end end local part = GetParts(PartName)if next(part) ~= nil then return part end return nil end
 
 
@@ -37,15 +36,15 @@ GetScreens()
 
 local PartstoGet = {
 	"Keyboard" ;
-	"Disk";
 	"Modem";
 	"LifeSensor";
 	"Instrument";
 	"Speaker";
-
 }
 
 --Desc: this is literally a simple terminal based os in which its only purpose is to run and execute  code from github
+
+local Diskcount = 0
 
 local System ={
 	Parts = {};
@@ -62,7 +61,60 @@ local MainFrames = {}
 --Cache
 local TerminalTextLabels = {}
 
---Cmds
+--file types
+local types = {
+	["t:txt/"] = function(Data)
+		Console(Data)
+	end,
+	["t:lua/"] = function(Data)
+		if string.find(Data,"https://raw.githubusercontent.com/") then
+			Console("Github File detected")
+			ConsoleWarn("WARNING: this requires a modem")
+			if not System.Parts.Modem then
+				Console("Modem Missing Cannot Run")
+				return
+			end
+
+			local url = Data
+			if not url then
+				Console("Usage: -r git <url>")
+				return
+			end
+
+			Console("Requesting Git Raw")
+			wait(1)
+
+			local Code = System.Parts.Modem:GetAsync(url)
+
+			local Code = formatcode(Code)
+
+			print("Executing Git Code:\n", Code)
+			local ok, err = pcall(function()
+				local thread = coroutine.create(function()
+					local func, loadErr = loadstring(Code)
+					if not func then error("Code failed to compile: " .. tostring(loadErr)) end
+					local success, execErr = pcall(func)
+					if not success then error("Code execution error: " .. tostring(execErr)) end
+				end)
+
+				table.insert(System.Threads, thread)
+				coroutine.resume(thread)
+			end)
+
+			if not ok then
+				Console("Coroutine start failed: " .. tostring(err))
+			else
+				Console("Git code executed.")
+			end
+		else
+			Console("Data: "..tostring(Data))
+			RunFunction(tostring(Data))
+		end
+	end
+}
+
+
+--cmds
 local Commands = {
 	["run"] = {
 		description = "Reformats and runs code for compadibility.";
@@ -247,9 +299,9 @@ local Commands = {
 
 						local Code = System.Parts.Modem:GetAsync(url)
 
-						if GetSuperPart("Microcontroller") then
+						if FindPart("Microcontroller") then
 							Console("procedding with update")
-							GetSuperPart("Microcontroller").Code = Code
+							FindPart("Microcontroller").Code = Code
 							Console("attempting to restart, if it doesnt restart, please do so manually")
 							Restart()
 						else
@@ -296,21 +348,21 @@ local Commands = {
 	};
 	["write"] = {
 		description = "Saves to disk e.x. use t:lua/ to write code that can be executed | Example: write Disk / puter t:lua/gitfile";
-		args = "<Disk> <Key_OR_Path> <Name> <Data>";
+		args = "<Disk> <Path> <Data>";
 		execute = function(args)
-			local disk = System.Parts.Disk
+			local disk = System[args[1]].Disk
 			if not disk then
 				ConsoleWarn("Disk not found: " .. tostring(args[1]))
 				return
 			end
 
-			Console(`Disk: {disk}`)
+			Console(`Disk: {args[1]}`)
 
 			-- Combine args[2] and args[3] to make a filename
-			local filename = (args[2] or "") .. (args[3] or "")
+			local filename = args[2]
 
 			-- Join everything after the 3rd arg as the file content
-			local content = table.concat(args, " ", 4)
+			local content = table.concat(args, " ", 3)
 
 			-- Save
 			SaveData(disk, filename, content)
@@ -330,7 +382,7 @@ local Commands = {
 			}
 
 			for Path, Data in NativePrograms do
-				System.Parts.Disk:Write(Path,Data)
+				System.Parts.Disk1.Disk:Write(Path,Data)
 			end
 		end;
 	};
@@ -340,69 +392,30 @@ local Commands = {
 		subcommands = {
 			["run"] = {
 				execute = function(args)
-					local disk = System.Parts[args[1]]
-					local path = args[2]
-					local Data = ReadData(disk,path)
-					--check if its a github raw
-					local types = {
-						["t:txt/"] = function(Data)
-							Console(Data)
-						end,
-						["t:lua/"] = function(Data)
-							if string.find(Data,"https://raw.githubusercontent.com/") then
-								Console("Github File detected")
-								ConsoleWarn("WARNING: this requires a modem")
-								if not System.Parts.Modem then
-									Console("Modem Missing Cannot Run")
-									return
-								end
+					local path = args[1]
+					local Data
+					local DiskFound
 
-								local url = Data
-								if not url then
-									Console("Usage: -r git <url>")
-									return
-								end
-
-								Console("Requesting Git Raw")
-								wait(1)
-
-								local Code = System.Parts.Modem:GetAsync(url)
-
-								local Code = formatcode(Code)
-
-								print("Executing Git Code:\n", Code)
-								local ok, err = pcall(function()
-									local thread = coroutine.create(function()
-										local func, loadErr = loadstring(Code)
-										if not func then error("Code failed to compile: " .. tostring(loadErr)) end
-										local success, execErr = pcall(func)
-										if not success then error("Code execution error: " .. tostring(execErr)) end
-									end)
-
-									table.insert(System.Threads, thread)
-									coroutine.resume(thread)
-								end)
-
-								if not ok then
-									Console("Coroutine start failed: " .. tostring(err))
-								else
-									Console("Git code executed.")
-								end
-							else
-								Console("Path: "..path)
-								Console("Data: "..tostring(Data))
-								RunFunction(tostring(Data))
-							end
+					--Atempts to find Data
+					for i = 1, Diskcount do
+						if System[`Disk{i}`].Files[path] then
+							Data = System[`Disk{i}`].Files[path]
+							DiskFound = i
+							break
 						end
-					}
+					end
 
-					-- indentifies which type it is
+					if Data == nil then
+						ConsoleWarn("File not found")
+						return
+					end
 
-					local typeTag, data = string.match(Data, "^(t:[^/]+/)(.+)")
+					local typeTag, data = Indentifytype(path,Data)
 
 					if typeTag and data then
 						print("Type:", typeTag)  -- t:lua/
-						print("Data:", data)     -- print('Hello from raw code!')
+						print("Data:", data)    
+						print("Disk:", DiskFound) -- print('Hello from raw code!')
 
 						if types[typeTag] then
 							types[typeTag](data)
@@ -419,11 +432,28 @@ local Commands = {
 			["print"] = {
 
 				execute = function(args)
-					local disk = System.Parts[args[1]]
-					local path = args[2]..args[3]
-					local Data = ReadData(disk,path)
-					Console("Path: "..path)
-					Console("Data: "..tostring(Data))
+					local path = args[1]
+					local Data
+					local Disk
+
+					--Atempts to find Data
+					for i = 1, Diskcount do
+						if System[`Disk{i}`].Files[path] then
+							Data = System[`Disk{i}`].Files[path]
+							Disk = System[`Disk{i}`].Disk
+							break
+						end
+					end
+
+					if Data == nil then
+						ConsoleWarn("File not found")
+						return
+					end
+
+					local data = ReadData(Disk,path)
+
+					print("Path:", path)  -- t:lua/
+					ConsoleWarn("Data:", data)    
 				end;
 			};
 		}
@@ -449,13 +479,17 @@ local Commands = {
 		description = "Prints in console.";
 		args = "";
 		execute = function(args)
+			Console("[<b>FILES</b>]")
 			MirrorDataToFile()
 
-			Console("---------------------")
-			for Path, Data in System.Files do
-				Console(`{Path}`)
+			for i, d in FindParts("Disk") do
+				Console(`[<b>Disk{i}Files</b>]`)
+				Console("	---------------------")
+				for Path, Data in System[`Disk{i}`].Files do
+					Console(`	{Path}`)
+				end
+				Console("	---------------------")
 			end
-			Console("---------------------")
 		end;
 	};
 	["fetch"] = {
@@ -521,7 +555,7 @@ local Commands = {
 		description = "Cleans Disk";
 		args = "<PartName>";
 		execute = function(args)
-			System.Parts.Disk:Clear()
+			System[args[1]].Disk:Clear()
 			ConsoleWarn("DISK CLEARED")
 		end;
 	};
@@ -586,67 +620,29 @@ local Commands = {
 		args = "<Path>";
 		execute = function(args)
 			local path = args[1]
-			local Data = System.Files[path]
-
-			local types = {
-				["t:txt/"] = function(Data)
-					Console(Data)
-				end,
-				["t:lua/"] = function(Data)
-					if string.find(Data,"https://raw.githubusercontent.com/") then
-						Console("Github File detected")
-						ConsoleWarn("WARNING: this requires a modem")
-						if not System.Parts.Modem then
-							Console("Modem Missing Cannot Run")
-							return
-						end
-
-						local url = Data
-						if not url then
-							Console("Usage: -r git <url>")
-							return
-						end
-
-						Console("Requesting Git Raw")
-						wait(1)
-
-						local Code = System.Parts.Modem:GetAsync(url)
-
-						local Code = formatcode(Code)
-
-						print("Executing Git Code:\n", Code)
-						local ok, err = pcall(function()
-							local thread = coroutine.create(function()
-								local func, loadErr = loadstring(Code)
-								if not func then error("Code failed to compile: " .. tostring(loadErr)) end
-								local success, execErr = pcall(func)
-								if not success then error("Code execution error: " .. tostring(execErr)) end
-							end)
-
-							table.insert(System.Threads, thread)
-							coroutine.resume(thread)
-						end)
-
-						if not ok then
-							Console("Coroutine start failed: " .. tostring(err))
-						else
-							Console("Git code executed.")
-						end
-					else
-						Console("Path: "..path)
-						Console("Data: "..tostring(Data))
-						RunFunction(tostring(Data))
-					end
+			local Data
+			local DiskFound
+			
+			--Atempts to find Data
+			for i = 1, Diskcount do
+				if System[`Disk{i}`].Files[path] then
+					Data = System[`Disk{i}`].Files[path]
+					DiskFound = i
+					break
 				end
-			}
-
-			-- indentifies which type it is
-
-			local typeTag, data = string.match(Data, "^(t:[^/]+/)(.+)")
+			end
+			
+			if Data == nil then
+				ConsoleWarn("File not found")
+				return
+			end
+			
+			local typeTag, data = Indentifytype(path,Data)
 
 			if typeTag and data then
 				print("Type:", typeTag)  -- t:lua/
-				print("Data:", data)     -- print('Hello from raw code!')
+				print("Data:", data)    
+				print("Disk:", DiskFound) -- print('Hello from raw code!')
 
 				if types[typeTag] then
 					types[typeTag](data)
@@ -960,7 +956,13 @@ local function CheckPartAndDisplayOnConsole(Part:string)
 end
 
 function MirrorDataToFile()
-	System.Files = System.Parts.Disk:ReadAll()
+	for i, d in FindParts("Disk") do
+		System[`Disk{i}`].Files = d:ReadAll()
+	end
+end
+
+function Indentifytype(path,Data)
+	return string.match(Data, "^(t:[^/]+/)(.+)")
 end
 
 function formatcode(Code:string)
@@ -977,8 +979,8 @@ function formatcode(Code:string)
 
 	if not string.find(Code, "function FindPart") then
 		local superPartDef = [[
-function FindPart(PartName: string)for port = 1, 20 do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
-function FindParts(PartName: string)for port = 1, 20 do local found = GetPartsFromPort(port, PartName)if next(found) ~= nil then return found end end local part = GetParts(PartName)if next(part) ~= nil then return part end return nil end
+function FindPart(PartName: string)for _,  port in GetPorts() do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
+function FindParts(PartName: string)for _, port in GetPorts() do local found = GetPartsFromPort(port, PartName)if next(found) ~= nil then return found end end local part = GetParts(PartName)if next(part) ~= nil then return part end return nil end
 ]]
 		Code = superPartDef .. "\n" .. Code
 
@@ -1004,6 +1006,20 @@ local Success, Error = pcall(function()
 		else
 			Console(`[<b>MISSING</b>] {PartName}`)
 		end
+	end
+	Console("Checking Disks...")
+	local Disks = FindParts("Disk")
+	Diskcount = #Disks
+	if #Disks > 0 then
+		Console(`[<b>OK</b>] Disk`)
+		for i, Di in Disks do
+			System["Disk"..i] = {}
+			System["Disk"..i].Disk = Di
+			print()
+		end
+		Console(`[<b>DISKS</b>] {#Disks}`)
+	else
+		Console(`[<b>MISSING</b>] Disk`)
 	end
 
 	Console(`[<b>SCREENS</b>] {#screens}`)
@@ -1062,12 +1078,15 @@ local Success, Error = pcall(function()
 
 	Console("[<b>FILES</b>]")
 	MirrorDataToFile()
-
-	Console("---------------------")
-	for Path, Data in System.Files do
-		Console(`{Path}`)
+	
+	for i, d in FindParts("Disk") do
+		Console(`[<b>Disk{i}Files</b>]`)
+		Console("	---------------------")
+		for Path, Data in System[`Disk{i}`].Files do
+			Console(`	{Path}`)
+		end
+		Console("	---------------------")
 	end
-	Console("---------------------")
 
 	Console("[<b>READY</b>]")
 
