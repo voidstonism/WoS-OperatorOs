@@ -378,6 +378,9 @@ local Commands = {
 			local NativePrograms = {
 				["/Clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
 				["/Radar"] = "t:lua/https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
+				["/OmoriPuter"] = "t:lua/https://raw.githubusercontent.com/0mori1/puter/refs/heads/main/code/putercode.lua";
+				["/ModemCom"] = "https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ModemCom.luau";
+				["/ArvidCom"] = "https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ArvidSilverlockModem.lua.luau";
 				["/Text.txt"] = "Hi there";
 			}
 
