@@ -959,8 +959,12 @@ local function CheckPartAndDisplayOnConsole(Part:string)
 end
 
 function MirrorDataToFile()
-	for i, d in FindParts("Disk") do
+	if Diskcount ~= 0 then
+		for i, d in FindParts("Disk") do
 		System[`Disk{i}`].Files = d:ReadAll()
+		end
+	else
+		Console("No Disk Found")
 	end
 end
 
@@ -1012,8 +1016,9 @@ local Success, Error = pcall(function()
 	end
 	Console("Checking Disks...")
 	local Disks = FindParts("Disk")
-	Diskcount = #Disks
-	if #Disks > 0 then
+	if Disk then
+		if #Disks > 0 then
+		Diskcount = #Disks
 		Console(`[<b>OK</b>] Disk`)
 		for i, Di in Disks do
 			System["Disk"..i] = {}
@@ -1021,8 +1026,9 @@ local Success, Error = pcall(function()
 			print()
 		end
 		Console(`[<b>DISKS</b>] {#Disks}`)
-	else
+		else
 		Console(`[<b>MISSING</b>] Disk`)
+		end
 	end
 
 	Console(`[<b>SCREENS</b>] {#screens}`)
@@ -1079,16 +1085,20 @@ local Success, Error = pcall(function()
 		ConsoleWarn("[<b>ERROR</b>] Keyboard Missing")
 	end
 
-	Console("[<b>FILES</b>]")
-	MirrorDataToFile()
+	if Diskcount ~= 0 then
+		Console("[<b>FILES</b>]")
+		MirrorDataToFile()
 	
-	for i, d in FindParts("Disk") do
-		Console(`[<b>Disk{i}Files</b>]`)
-		Console("	---------------------")
-		for Path, Data in System[`Disk{i}`].Files do
-			Console(`	{Path}`)
+		for i, d in FindParts("Disk") do
+			Console(`[<b>Disk{i}Files</b>]`)
+			Console("	---------------------")
+			for Path, Data in System[`Disk{i}`].Files do
+				Console(`	{Path}`)
+			end
+			Console("	---------------------")
 		end
-		Console("	---------------------")
+	else
+		Console("No Disk Found")
 	end
 
 	Console("[<b>READY</b>]")
