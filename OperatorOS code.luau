@@ -625,7 +625,7 @@ local Commands = {
 			local path = args[1]
 			local Data
 			local DiskFound
-			
+
 			--Atempts to find Data
 			for i = 1, Diskcount do
 				if System[`Disk{i}`].Files[path] then
@@ -634,12 +634,12 @@ local Commands = {
 					break
 				end
 			end
-			
+
 			if Data == nil then
 				ConsoleWarn("File not found")
 				return
 			end
-			
+
 			local typeTag, data = Indentifytype(path,Data)
 
 			if typeTag and data then
@@ -961,7 +961,7 @@ end
 function MirrorDataToFile()
 	if Diskcount ~= 0 then
 		for i, d in FindParts("Disk") do
-		System[`Disk{i}`].Files = d:ReadAll()
+			System[`Disk{i}`].Files = d:ReadAll()
 		end
 	else
 		Console("No Disk Found")
@@ -1015,10 +1015,9 @@ local Success, Error = pcall(function()
 		end
 	end
 	Console("Checking Disks...")
-	local Disks = FindParts("Disk")
-	if Disk then
-		if #Disks > 0 then
-		Diskcount = #Disks
+	local Disks = FindParts("Disk") or nil
+	if Disks then
+		Diskcount = #Disks or 0
 		Console(`[<b>OK</b>] Disk`)
 		for i, Di in Disks do
 			System["Disk"..i] = {}
@@ -1026,9 +1025,8 @@ local Success, Error = pcall(function()
 			print()
 		end
 		Console(`[<b>DISKS</b>] {#Disks}`)
-		else
+	else
 		Console(`[<b>MISSING</b>] Disk`)
-		end
 	end
 
 	Console(`[<b>SCREENS</b>] {#screens}`)
@@ -1088,7 +1086,7 @@ local Success, Error = pcall(function()
 	if Diskcount ~= 0 then
 		Console("[<b>FILES</b>]")
 		MirrorDataToFile()
-	
+
 		for i, d in FindParts("Disk") do
 			Console(`[<b>Disk{i}Files</b>]`)
 			Console("	---------------------")
