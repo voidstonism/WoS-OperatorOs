@@ -49,7 +49,7 @@ local Diskcount = 0
 local System ={
 	Parts = {};
 	Threads = {};
-	Files = {};
+	Files = {}; -- deprecated
 	Connections = {};
 	Configurables = {
 		ConsoleColor3 = Color3.fromRGB(255, 255, 255);
@@ -379,8 +379,8 @@ local Commands = {
 				["/Clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
 				["/Radar"] = "t:lua/https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
 				["/OmoriPuter"] = "t:lua/https://raw.githubusercontent.com/0mori1/puter/refs/heads/main/code/putercode.lua";
-				["/ModemCom"] = "https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ModemCom.luau";
-				["/ArvidCom"] = "https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ArvidSilverlockModem.lua.luau";
+				["/ModemCom"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ModemCom.luau";
+				["/ArvidCom"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ArvidSilverlockModem.lua.luau";
 				["/Text.txt"] = "Hi there";
 			}
 
