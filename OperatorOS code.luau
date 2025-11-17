@@ -395,7 +395,7 @@ local Commands = {
 		end;
 	};
 	["read"] = {
-		description = "Reads Disk -- more advanced than open";
+		description = "Reads Disk -- less advanced than open";
 		args = "<subcommand> <Disk> <Name>";
 		subcommands = {
 			["run"] = {
@@ -457,8 +457,17 @@ local Commands = {
 						ConsoleWarn("File not found")
 						return
 					end
-
+					
 					local data = ReadData(Disk,path)
+					
+					if typeof(data) == "table" then
+						local StringData = ""
+						for i,object in data do
+							StringData = StringData..`{i}:{object}; `
+						end
+						data = StringData
+						Console("type: table")
+					end
 
 					print("Path:", path)  -- t:lua/
 					ConsoleWarn("Data:", data)    
@@ -656,6 +665,7 @@ local Commands = {
 					types[typeTag](data)
 				else
 					ConsoleWarn("Unknown type: " .. typeTag)
+					Console("Data:", data) 
 				end
 			else
 				ConsoleWarn("Input format not recognized. Outputting raw data:")
