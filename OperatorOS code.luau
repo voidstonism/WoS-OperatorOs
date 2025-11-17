@@ -59,6 +59,11 @@ local System ={
 }
 local MainFrames = {}
 --Cache
+
+local RAM = {
+	Buffer= {}
+}
+
 local TerminalTextLabels = {}
 
 --file types
@@ -619,7 +624,7 @@ local Commands = {
 		end;
 	};
 	["open"] = {
-		description = "opens app simpler but lacks disk selector";
+		description = "finds and opens files reghardless of disk location (WARNING SAME FILES ON TWO DIFFERENT DISK MAY CONFLICT)";
 		args = "<Path>";
 		execute = function(args)
 			local path = args[1]
@@ -671,9 +676,9 @@ local Commands = {
 						-- Stop coroutines
 						for _, thread in ipairs(System.Threads) do
 							if coroutine.status(thread) ~= "dead" then
-								-- No native coroutine.kill, so we can only close if coroutine.wrap used or yield checked
 								pcall(function()
-									coroutine.close(thread) -- Works in Pilot.lua with Luau coroutine extensions
+									coroutine.close(thread)
+									System.Threads = {}
 								end)
 							end
 						end
@@ -690,21 +695,18 @@ local Commands = {
 						Beep()
 						Console("Ceasing all threads in System.Threads")
 
-						-- Stop coroutines
 						for _, thread in ipairs(System.Threads) do
 							if coroutine.status(thread) ~= "dead" then
-								-- No native coroutine.kill, so we can only close if coroutine.wrap used or yield checked
 								pcall(function()
-									coroutine.close(thread) -- Works in Pilot.lua with Luau coroutine extensions
+									coroutine.close(thread)
+									System.Threads = {}
 								end)
 							end
 						end
 
 
-						-- Optional: Clear all UI or reset terminal
-
 						MAINFRAMINI()
-						Console("All Threads have been ceased restarter required")
+						Console("All Threads have been ceased restarte may be required")
 					end
 
 
@@ -890,18 +892,16 @@ end
 MAINFRAMINI()
 
 --Universal helpers
-
-function CheckPart(part)
-	if part then
-		return true, `Part "{part}" detected`
-	else
-		return false, `Part "{part}" not detected`
-	end
-end
-
 function RunFunction(code)
 	local Thread = coroutine.create(function()
-		loadstring(code)()
+		local Succes, Error = pcall(function()
+			loadstring(code)()
+		end)
+		if Succes then
+			Console(`executed successfully`)
+		else
+			ConsoleWarn(Error)
+		end
 	end)
 
 	table.insert(System.Threads, Thread)
@@ -946,18 +946,6 @@ function ConsoleWarn(TXT: string)
 	Console(TXT, System.Configurables.ConsoleWarningColor)
 end
 
-local function CheckPartAndDisplayOnConsole(Part:string)
-	local PartObj = FindPart(Part)
-	local Boolean, text = CheckPart(PartObj)
-
-	if Boolean then
-		System.Parts[Part] = PartObj
-		Console(`{Part} is no longer nil, part assigned`)
-	end
-
-	Console(text)
-end
-
 function MirrorDataToFile()
 	if Diskcount ~= 0 then
 		for i, d in FindParts("Disk") do
@@ -969,7 +957,15 @@ function MirrorDataToFile()
 end
 
 function Indentifytype(path,Data)
-	return string.match(Data, "^(t:[^/]+/)(.+)")
+	if typeof(Data) == "table" then
+		local StringData = ""
+		for i,object in Data do
+			StringData = StringData..`{i}:{object}; `
+		end
+		return "table",StringData
+	else
+		return string.match(Data, "^(t:[^/]+/)(.+)")
+	end
 end
 
 function formatcode(Code:string)
@@ -1015,6 +1011,7 @@ local Success, Error = pcall(function()
 		end
 	end
 	Console("Checking Disks...")
+	
 	local Disks = FindParts("Disk") or nil
 	if Disks then
 		Diskcount = #Disks or 0
