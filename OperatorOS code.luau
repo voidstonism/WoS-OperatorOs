@@ -665,7 +665,7 @@ local Commands = {
 					types[typeTag](data)
 				else
 					ConsoleWarn("Unknown type: " .. typeTag)
-					Console("Data:", data) 
+					Console("Data: "..data) 
 				end
 			else
 				ConsoleWarn("Input format not recognized. Outputting raw data:")
