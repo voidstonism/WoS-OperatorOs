@@ -1,7 +1,6 @@
 function FindPart(PartName: string)for _,  port in GetPorts() do local found = GetPartFromPort(port, PartName)if found then return found end end local part = GetPart(PartName)if part then return part end return nil end
 function FindParts(PartName: string)for _, port in GetPorts() do local found = GetPartsFromPort(port, PartName)if next(found) ~= nil then return found end end local part = GetParts(PartName)if next(part) ~= nil then return part end return nil end
 
-
 function Restart()
 	local port = GetPort(1)
 	if port then
@@ -11,8 +10,6 @@ function Restart()
 	end
 end
 
-
---Voiv'y's simple OS
 local screens = {}
 
 --GetScreens
@@ -49,7 +46,6 @@ local Diskcount = 0
 local System ={
 	Parts = {};
 	Threads = {};
-	Files = {}; -- deprecated
 	Connections = {};
 	Configurables = {
 		ConsoleColor3 = Color3.fromRGB(255, 255, 255);
@@ -58,11 +54,6 @@ local System ={
 	};
 }
 local MainFrames = {}
---Cache
-
-local RAM = {
-	Buffer= {}
-}
 
 local TerminalTextLabels = {}
 
@@ -117,7 +108,6 @@ local types = {
 		end
 	end
 }
-
 
 --cmds
 local Commands = {
@@ -861,7 +851,6 @@ local Commands = {
 	};
 }
 
-
 function GetCommands()
 	return Commands
 end
@@ -918,8 +907,6 @@ function RunFunction(code)
 	coroutine.resume(Thread)
 end
 
-
-
 function ModifyConsoleLine(TextLabel:TextLabel,Text)
 	TextLabel.Text = Text
 end
@@ -928,11 +915,11 @@ function Console(TXT: string, TxtColor: Color3?)
 	local label
 	for i, Screen1 in screens do
 		label = Screen1:CreateElement("TextLabel", {
-			Name = "> " .. TXT,
+			Name = "" .. TXT,
 			Size = UDim2.fromScale(1, 0),
 			Position = UDim2.fromScale(0, 0),
 			AnchorPoint = Vector2.new(0, 0),
-			Text = "> " .. TXT,
+			Text = "" .. TXT,
 			TextWrapped = true,
 			RichText = true,
 			Font = "Ubuntu",
@@ -1045,8 +1032,8 @@ local Success, Error = pcall(function()
 		System.Parts.Keyboard.TextInputted:Connect(function(txt)
 			--Handle Mulitple commands such as &&
 			txt = tostring(txt:gsub("\n", ""))
-			Console(`┌ROOT@LocalHost`)
-			Console(`└{txt}`)
+			Console(`┌root@localhost`)
+			Console(`└>{txt}`)
 
 			local CommandsTable = txt:split(" && ")
 
