@@ -17,9 +17,9 @@ local System ={
 	};
 	Parts = {};
 	Configurables = {
-		ConsoleColor3 = Color3.fromRGB(255, 255, 255);
-		ConsoleWarningColor = Color3.fromRGB(255, 115, 0);
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0);
+		ConsoleColor3 = Color3.fromHex("#DCD7BA");
+		ConsoleWarningColor = Color3.fromHex("#FF9E3B");
+		BackgroundColor3 = Color3.fromHex("#2A2A37");
 		CMDFONT = Enum.Font.Arcade;
 		CMDTextSize = 12;
 	};
@@ -652,7 +652,7 @@ SYSTEMINITFUNC = {
 			PartCache = GetPart(PartName)
 			if PartCache then
 				System.Parts[PartCache.ClassName] = PartCache
-				Console("[<b>OK</b>] "..PartName)
+				Console("[<b>OK</b>] "..PartName,Color3.fromHex("#76946A"))
 			else
 				ConsoleWarn("[<b>MISSING</b>] "..PartName)
 			end
@@ -673,8 +673,8 @@ SYSTEMINITFUNC = {
 			local Connection
 			Connection = Keyboard.TextInputted:Connect(function(txt,plr)
 				local Cleanedtxt = string.gsub(txt, "\n", "")
-				Console("root",Color3.fromRGB(0, 85, 255))
-				Console("	$ "..Cleanedtxt,Color3.fromRGB(255, 192, 116))
+				Console("root",Color3.fromHex("#7E9CD8"))
+				Console("	$ "..Cleanedtxt,Color3.fromHex("#98BB6C"))
 				CMDInterpeter(Cleanedtxt)
 			end)
 			
@@ -693,7 +693,7 @@ SYSTEMINITFUNC = {
 			Console("	---------------------")
 			local d = ""
 			for Path, Data in System[`Disk{i}`].Files do
-				Console(`{Path}`)
+				Console(`{Path}`,Color3.fromHex("#7FB4CA"))
 			end
 			Console("	---------------------")
 		end
