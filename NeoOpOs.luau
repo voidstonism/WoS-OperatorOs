@@ -8,6 +8,7 @@ end
 --[[MBEE_HEADER__DO_NOT_EDIT]]
 local System ={
 	LocalHost = "127.0.0.1";
+	KeyBoardFocus = nil;
 	Terminal = {
 		TerminalTextLabels = {};
 		MainFrames = {};
@@ -95,8 +96,25 @@ function MD2F_Silent()
 	end
 end
 
+function KillPID(PID)
+	for i, proc in pairs(System.Threads) do
+		if proc.Descriptor == PID then
+			Console("PID FOUND")
+			for _, e in pairs(proc.Elements) do
+				e:Destroy()
+			end
+			coroutine.yield(proc.Thread)
+			coroutine.close(proc.Thread)
+			table.remove(System.Threads,i)
+			Console(`PID {PID} killed.`)
+		else
+			Console("PID NOT FOUND")
+		end
+	end
+end
+
 function RunGitFile(Data,Format)
-	if string.find(Data,"https://raw.githubusercontent.com/") then
+	if string.find(Data,"https://raw.githubusercontent.com/") or string.find(Data,"https://gist.githubusercontent.com/") then
 		Console("Github File detected")
 		ConsoleWarn("WARNING: this requires a modem")
 		if not System.Parts.Modem then
@@ -342,19 +360,7 @@ local CMDS = {
 					local PID = tonumber(entry.Args[1])
 					print(PID)
 					
-					for i, proc in pairs(System.Threads) do
-						if proc.Descriptor == PID then
-							Console("PID FOUND")
-							Beep()
-							for _, e in pairs(proc.Elements) do
-								e:Destroy()
-							end
-							coroutine.close(proc.Thread)
-							table.remove(System.Threads,i)
-						else
-							Console("PID NOT FOUND")
-						end
-					end
+					KillPID(PID)
 				end
 			end
 		end
@@ -390,6 +396,46 @@ local CMDS = {
 
 		Function = function(commandName, segment)
 			local parsed = ParseCommandLine(segment)
+
+			for _, entry in ipairs(parsed) do
+				if entry.Flag then
+					RunFlags(commandName, {entry.Flag}, entry.Args)
+				else
+					FlagInterater(commandName)
+				end
+			end
+		end,
+	};
+	cmodem = {
+		Flags = {
+			smmc = function(arg)
+				System.KeyBoardFocus = "modem"
+			end,
+		},
+
+		Function = function(commandName, segment)
+			local parsed = ParseCommandLine(segment)
+			
+			System.Connections.ModemConnect = System.Parts.Modem.MessageSent:Connect(function(msg)
+				local msgid = string.match(msg, "MID:%d%d%d%d%d%d%d") -- voidstonism message id format for modemcom
+
+				local success, Jsonfile = pcall(function()
+					return JSONDecode(msg)
+				end)
+
+				if msgid then
+					Console(`[SMMC][{System.Parts.Modem.NetworkID}]: {string.gsub(msg, "MID:%d%d%d%d%d%d%d ", "")}`,Color3.fromRGB(255, 223, 148))
+				elseif success and Jsonfile then
+					if Jsonfile.type == "TEXT_MESSAGE" then
+						Console(`[SMDoS][{System.Parts.Modem.NetworkID}]: {Jsonfile.sender}: {Jsonfile.content}`)
+						print(Jsonfile.target_channel_id)
+					end
+				else
+					Console(`[Standard][{System.Parts.Modem.NetworkID}]: {msg}`)
+				end
+			end)	
+			
+			Console(`[{System.Parts.Modem.NetworkID}] : Connection Establised`,Color3.fromRGB(85, 170, 0))
 
 			for _, entry in ipairs(parsed) do
 				if entry.Flag then
@@ -618,7 +664,48 @@ local Daemons = {
 	end,
 }
 
+--applets
 
+--keyboard modes
+
+local KeyboardModes = {
+	modem = function(txt,plr)
+		if txt == "qa!" then
+			System.KeyBoardFocus = nil
+
+			if not System.Parts.Modem then
+				ConsoleWarn("Modem Missing")
+				return
+			end
+			System.Connections.ModemConnect:Disconnect()	
+			ConsoleWarn("System.Connections.ModemConnect has been disconnected")
+			
+			txt = `{plr} has disconnected.`
+		end
+		
+		local Modem = System.Parts.Modem
+		
+		local function GenerateID()
+			local ID = "MID:"
+
+			for i = 1, 7 do
+				ID = ID..tostring(math.random(0,9))
+			end
+
+			return ID
+		end
+
+
+		local text = `{GenerateID()} {plr} | {txt}`
+		
+		Console(`[SMMC][{Modem.NetworkID}]: {txt}`,Color3.fromRGB(85, 0, 255))
+
+		Modem:SendMessage(text)	
+	end;
+	response = function(txt,plr)
+		
+	end;
+}
 
 --SYSTEM INITIALIZATION FUNC
 
@@ -673,9 +760,14 @@ SYSTEMINITFUNC = {
 			local Connection
 			Connection = Keyboard.TextInputted:Connect(function(txt,plr)
 				local Cleanedtxt = string.gsub(txt, "\n", "")
-				Console("root",Color3.fromHex("#7E9CD8"))
-				Console("	$ "..Cleanedtxt,Color3.fromHex("#98BB6C"))
-				CMDInterpeter(Cleanedtxt)
+				if KeyboardModes[System.KeyBoardFocus] then
+					KeyboardModes[System.KeyBoardFocus](Cleanedtxt,plr)
+				else
+					System.KeyBoardFocus = nil
+					Console("root",Color3.fromHex("#7E9CD8"))
+					Console("	$ "..Cleanedtxt,Color3.fromHex("#98BB6C"))
+					CMDInterpeter(Cleanedtxt)
+				end
 			end)
 			
 			table.insert(System.Connections,Connection)
@@ -736,8 +828,6 @@ function formatcode(Code:string)
 
 	Code = string.gsub(Code, 'GetPartFromPort%(%d+,%s*"(.-)"%)', 'FindPart("%1")')
 	Code = string.gsub(Code, 'GetPart%(%s*"(.-)"%)', 'FindPart("%1")')
-	
-	Code = string.gsub(Code, "([%a_][%w_]*)%s*:%s*CreateElement%(", "CreateElement(")
 
 	Code = string.gsub(Code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'FindParts("%1")')
 	Code = string.gsub(Code, 'GetParts%(%s*"(.-)"%)', 'FindParts("%1")')
@@ -779,7 +869,6 @@ function RunFunction(code)
 	Console([[
 	VTBOS SANBOXED RUNFUNCTION HELPER
 	]])
-	print(code)
 	
 	local sandboxFunc = {}
 	local PID = {
@@ -787,6 +876,10 @@ function RunFunction(code)
 		Thread = nil;
 		Elements = {};
 	}
+	
+	local function MethodSubsituter(Method)
+		code = string.gsub(code, `([%a_][%w_]*)%s*:%s*{Method}%(`, `{Method}(`)
+	end
 	
 	System.PIDCount+=1
 
@@ -797,9 +890,19 @@ function RunFunction(code)
 		end
 		return part
 	end
+	
+	local FunctionFrame = screens[1]:CreateElement('Frame',{
+		AnchorPoint = Vector2.new(0.5,0.5);
+		Position = UDim2.fromScale(0.5,0.5);
+		Size = UDim2.fromScale(0.6,0.6);
+		BackgroundColor3 = Color3.fromRGB(0, 0, 0);
+	})
+	
+	table.insert(PID.Elements,FunctionFrame)
 
 	sandboxFunc.CreateElementSandboxed = function(type1, params)
 		local element = screens[1]:CreateElement(type1, params)
+		element.Parent = FunctionFrame
 		table.insert(PID.Elements,element)
 		--Console("Element Created			"..type1)
 		--Beep()
@@ -807,11 +910,13 @@ function RunFunction(code)
 	end
 
 	local sandboxEnv = {
-		CreateElement = sandboxFunc.CreateElementSandboxed,
 		Console = Console,
 		ConsoleWarn = ConsoleWarn,
-		FindPart = FindPart,
-		FindParts = FindParts,
+	}
+	
+	local sandboxmethods = {
+		CreateElement = sandboxFunc.CreateElementSandboxed,
+		ClearElements = function() Console("Cannot Clear Elements") Beep(0.1) end,
 	}
 	
 	setmetatable(sandboxEnv, {
@@ -827,18 +932,26 @@ function RunFunction(code)
 	for i,v in sandboxEnv do
 		env[i] = v
 	end
+	
+	for i,v in sandboxmethods do
+		env[i] = v
+		Console(i)
+		MethodSubsituter(i)
+	end
 
 	local thread = coroutine.create(function()
 		local func, compileErr = loadstring(code)
 		setfenv(func,env)
 		if not func then
 			ConsoleWarn("Compile error: " .. tostring(compileErr))
+			KillPID(PID.Descriptor)
 			return
 		end
 
 		local success, execErr = pcall(func)
 		if not success then
 			ConsoleWarn("Runtime error: " .. tostring(execErr))
+			KillPID(PID.Descriptor)
 		else
 			Console("executed successfully")
 		end
