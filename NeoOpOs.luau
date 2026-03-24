@@ -8,7 +8,10 @@ end
 --[[MBEE_HEADER__DO_NOT_EDIT]]
 local System ={
 	LocalHost = "127.0.0.1";
-	KeyBoardFocus = nil;
+	KeyBoardFocus = {
+		Mode = nil;
+		SubMode = nil;
+	};
 	Terminal = {
 		TerminalTextLabels = {};
 		MainFrames = {};
@@ -70,9 +73,9 @@ GetScreens()
 
 function MirrorDataToFile()
 	System.DiskCount = #FindParts("Disk")
-	
+
 	Console("[<b>#Disk</b>] "..System.DiskCount)
-	
+
 	if System.DiskCount ~= 0 then
 		for i, d in FindParts("Disk") do
 			System[`Disk{i}`] = {}
@@ -257,7 +260,7 @@ local CMDS = {
 	open = {
 		Flags = {
 			raw = function(arg)
-				
+
 			end,
 		},
 		Function = function(commandName, segment)
@@ -269,7 +272,7 @@ local CMDS = {
 				else
 					local path = entry.Args[1]
 					local Data = FindFile(path)
-					
+
 
 					local typeTag, data = Indentifytype(path,Data)
 
@@ -306,7 +309,7 @@ local CMDS = {
 					RunFlags(commandName, {entry.Flag}, entry.Args)
 				else
 					local Data = ArgMerger(entry.Args)
-					
+
 					RunGitFile(Data,true)
 				end
 			end
@@ -359,7 +362,7 @@ local CMDS = {
 				else
 					local PID = tonumber(entry.Args[1])
 					print(PID)
-					
+
 					KillPID(PID)
 				end
 			end
@@ -406,18 +409,34 @@ local CMDS = {
 			end
 		end,
 	};
-	cmodem = {
+	cm = {
 		Flags = {
 			smmc = function(arg)
-				System.KeyBoardFocus = "modem"
+				System.KeyBoardFocus.SubMode = "smmc"
+			end,
+			sm = function(arg)
+				System.KeyBoardFocus.SubMode = "sm"
+			end,
+			atms = function(arg)
+				System.KeyBoardFocus.SubMode = "atms"
 			end,
 		},
 
 		Function = function(commandName, segment)
 			local parsed = ParseCommandLine(segment)
 			
+			System.KeyBoardFocus.Mode = "modem"
+			
+			local PrevMsg = ""
+
 			System.Connections.ModemConnect = System.Parts.Modem.MessageSent:Connect(function(msg)
-				local msgid = string.match(msg, "MID:%d%d%d%d%d%d%d") -- voidstonism message id format for modemcom
+				if PrevMsg == msg then
+					return
+				end
+				
+				PrevMsg = msg
+				
+				local msgid = string.match(msg, "MID:%d%d%d%d%d%d%d ") -- voidstonism message id format for modemcom
 
 				local success, Jsonfile = pcall(function()
 					return JSONDecode(msg)
@@ -426,15 +445,12 @@ local CMDS = {
 				if msgid then
 					Console(`[SMMC][{System.Parts.Modem.NetworkID}]: {string.gsub(msg, "MID:%d%d%d%d%d%d%d ", "")}`,Color3.fromRGB(255, 223, 148))
 				elseif success and Jsonfile then
-					if Jsonfile.type == "TEXT_MESSAGE" then
-						Console(`[SMDoS][{System.Parts.Modem.NetworkID}]: {Jsonfile.sender}: {Jsonfile.content}`)
-						print(Jsonfile.target_channel_id)
-					end
+					Console(`[ATMS][{System.Parts.Modem.NetworkID}][{Jsonfile.sender}]: {Jsonfile.content}`)
 				else
 					Console(`[Standard][{System.Parts.Modem.NetworkID}]: {msg}`)
 				end
 			end)	
-			
+
 			Console(`[{System.Parts.Modem.NetworkID}] : Connection Establised`,Color3.fromRGB(85, 170, 0))
 
 			for _, entry in ipairs(parsed) do
@@ -466,12 +482,12 @@ local CMDS = {
 				g=g..` | STATUS: {coroutine.status(t.Thread)}`
 				g=g.."\n"
 			end
-			
-			
+
+
 			g=g..`{#System.Threads} Threads`
-			
+
 			Console(g)
-			
+
 			Console("Daemons")
 			local s=""
 			for i, t in System.Daemons do
@@ -485,7 +501,7 @@ local CMDS = {
 			s=s..`{#System.Daemons} Threads`
 			s=s.."\n"
 			s=s..`{#System.Connections} Connections`
-				
+
 			Console(s)
 		end
 	};
@@ -501,7 +517,7 @@ end
 function RunFlags(commandName, flags, args)
 	local command = CMDS[commandName]
 	if not command.Flags then return end
-	
+
 	if not command.Flags[flags[1]] then
 		Console("Invalid flag: "..`"{flags[1]}"`)
 	end
@@ -516,12 +532,12 @@ end
 
 function ParseCommandLine(segment: string, disableArguments)
 	disableArguments = disableArguments or false
-	
+
 	if segment == "" and not disableArguments then
 		Console("Arguments Missing")
 		return {}
 	end
-	
+
 	local tokens = {}
 	for token in segment:gmatch("%S+") do
 		table.insert(tokens, token)
@@ -671,7 +687,8 @@ local Daemons = {
 local KeyboardModes = {
 	modem = function(txt,plr)
 		if txt == "qa!" then
-			System.KeyBoardFocus = nil
+			System.KeyBoardFocus.Mode = nil
+			System.KeyBoardFocus.SubMode = nil
 
 			if not System.Parts.Modem then
 				ConsoleWarn("Modem Missing")
@@ -679,31 +696,59 @@ local KeyboardModes = {
 			end
 			System.Connections.ModemConnect:Disconnect()	
 			ConsoleWarn("System.Connections.ModemConnect has been disconnected")
-			
+
 			txt = `{plr} has disconnected.`
 		end
 		
 		local Modem = System.Parts.Modem
 		
-		local function GenerateID()
-			local ID = "MID:"
+		local ContentToSend = txt
 
-			for i = 1, 7 do
+		local function GenerateID(Len:number)
+			local Length = Len or 7 -- standard is 7 digits
+			local ID = "MID:"
+			for i = 1, Len do
 				ID = ID..tostring(math.random(0,9))
 			end
-
 			return ID
 		end
 
+		local MMCM = {
+			SMMC = function() -- standard Messaging for Modem Com
 
-		local text = `{GenerateID()} {plr} | {txt}`
-		
-		Console(`[SMMC][{Modem.NetworkID}]: {txt}`,Color3.fromRGB(85, 0, 255))
+				ContentToSend = `{GenerateID(7)} {plr} | {txt}`
 
-		Modem:SendMessage(text)	
+				Console(`[You][SMMC][{Modem.NetworkID}]: {plr} | {txt}`,Color3.fromRGB(85, 0, 255))
+			end,
+			SM = function() -- standard Messaging
+				ContentToSend = `{plr} | {txt}`
+				Console(`[You][SM][{Modem.NetworkID}]: {txt}`,Color3.fromRGB(85, 0, 255))
+			end,
+			ATMS = function() -- Advanced Table-based Message System
+				local Message = {
+					sender = plr;
+					content = txt;
+					MSGID = GenerateID(64)
+				}
+				ContentToSend = JSONEncode(Message)
+				Console(`[You][ATMS][{Modem.NetworkID}]: {txt}`,Color3.fromRGB(85, 0, 255))
+			end,
+		}
+
+		local Submode = string.upper(System.KeyBoardFocus.SubMode)
+
+		if MMCM[Submode] then
+			MMCM[Submode]()
+		else
+			MMCM.SM()
+			Console("Submode not specified, defaulting to SM.")
+			System.KeyBoardFocus.SubMode = "sm"
+		end 
+
+		Modem:SendMessage(ContentToSend)	
 	end;
 	response = function(txt,plr)
-		
+
 	end;
 }
 
@@ -754,22 +799,22 @@ SYSTEMINITFUNC = {
 	INITKEYBOARD = function()
 		Console("Starting Keyboard..")
 		local Keyboard = GetPart("Keyboard")
-		
+
 		if Keyboard then
 			Console("Connecting Keyboard..")
 			local Connection
 			Connection = Keyboard.TextInputted:Connect(function(txt,plr)
 				local Cleanedtxt = string.gsub(txt, "\n", "")
-				if KeyboardModes[System.KeyBoardFocus] then
-					KeyboardModes[System.KeyBoardFocus](Cleanedtxt,plr)
+				if KeyboardModes[System.KeyBoardFocus.Mode] then
+					KeyboardModes[System.KeyBoardFocus.Mode](Cleanedtxt,plr)
 				else
-					System.KeyBoardFocus = nil
+					System.KeyBoardFocus.Mode = nil
 					Console("root",Color3.fromHex("#7E9CD8"))
 					Console("	$ "..Cleanedtxt,Color3.fromHex("#98BB6C"))
 					CMDInterpeter(Cleanedtxt)
 				end
 			end)
-			
+
 			table.insert(System.Connections,Connection)
 		else
 			Console("Keyboard missing!")
@@ -832,9 +877,9 @@ function formatcode(Code:string)
 	Code = string.gsub(Code, 'GetPartsFromPort%(%d+,%s*"(.-)"%)', 'FindParts("%1")')
 	Code = string.gsub(Code, 'GetParts%(%s*"(.-)"%)', 'FindParts("%1")')
 
-	
 
-		return Code
+
+	return Code
 
 end
 
@@ -869,18 +914,18 @@ function RunFunction(code)
 	Console([[
 	VTBOS SANBOXED RUNFUNCTION HELPER
 	]])
-	
+
 	local sandboxFunc = {}
 	local PID = {
 		Descriptor = System.PIDCount+1;
 		Thread = nil;
 		Elements = {};
 	}
-	
+
 	local function MethodSubsituter(Method)
 		code = string.gsub(code, `([%a_][%w_]*)%s*:%s*{Method}%(`, `{Method}(`)
 	end
-	
+
 	System.PIDCount+=1
 
 	sandboxFunc.GetPartFromSystem = function(partName)
@@ -890,14 +935,14 @@ function RunFunction(code)
 		end
 		return part
 	end
-	
+
 	local FunctionFrame = screens[1]:CreateElement('Frame',{
 		AnchorPoint = Vector2.new(0.5,0.5);
 		Position = UDim2.fromScale(0.5,0.5);
 		Size = UDim2.fromScale(0.6,0.6);
 		BackgroundColor3 = Color3.fromRGB(0, 0, 0);
 	})
-	
+
 	table.insert(PID.Elements,FunctionFrame)
 
 	sandboxFunc.CreateElementSandboxed = function(type1, params)
@@ -913,26 +958,26 @@ function RunFunction(code)
 		Console = Console,
 		ConsoleWarn = ConsoleWarn,
 	}
-	
+
 	local sandboxmethods = {
 		CreateElement = sandboxFunc.CreateElementSandboxed,
 		ClearElements = function() Console("Cannot Clear Elements") Beep(0.1) end,
 	}
-	
+
 	setmetatable(sandboxEnv, {
 		__index = _G
 	})
-	
+
 	local env = tableReplicate(getfenv())
-	
+
 	env.getfenv = function()
 		return env
 	end
-	
+
 	for i,v in sandboxEnv do
 		env[i] = v
 	end
-	
+
 	for i,v in sandboxmethods do
 		env[i] = v
 		Console(i)
@@ -956,7 +1001,7 @@ function RunFunction(code)
 			Console("executed successfully")
 		end
 	end)
-	
+
 	PID.Thread = thread
 
 	table.insert(System.Threads, PID)
