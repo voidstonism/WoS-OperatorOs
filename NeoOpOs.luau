@@ -17,7 +17,8 @@ local System ={
 		MainFrames = {};
 	};
 	Information = {
-		Name = "NeoOpOS"
+		Name = "NeoOpOS";
+		Version = "1.0.0"
 	};
 	Parts = {};
 	Configurables = {
@@ -1101,6 +1102,7 @@ if not Success then
 	Beep(0.2)
 else
 	Console("SYSTEM STARTED")
+	Console(`{System.Information.Name} {System.Information.Version}`)
 	Beep()
 end
 
