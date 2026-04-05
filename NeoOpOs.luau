@@ -3,7 +3,7 @@ if game then
 	PilotLua = require(game.ReplicatedStorage.PilotLua)
 	Beep, FileSystem, GetCPUTime, GetPart, GetPartFromPort, GetParts, GetPartsFromPort, GetPort, GetPorts, JSONDecode, JSONEncode, Microcontroller, Network, RawFileSystem, SandboxID, SandboxRunID, TriggerPort, logError, pilot = PilotLua()
 end
--- Version 1755562366
+-- Version 1768391500
 -- Automatically generated header, provides typechecking. Disable "Microcontroller Typechecking" in advanced settings to remove.
 --[[MBEE_HEADER__DO_NOT_EDIT]]
 local System ={
@@ -936,14 +936,50 @@ function RunFunction(code)
 		return part
 	end
 
-	local FunctionFrame = screens[1]:CreateElement('Frame',{
+	local AppFrame = screens[1]:CreateElement('Frame',{
 		AnchorPoint = Vector2.new(0.5,0.5);
-		Position = UDim2.fromScale(0.5,0.5);
+		Position = UDim2.fromScale(0.3+(System.PIDCount/20),0.3+(System.PIDCount/20));
 		Size = UDim2.fromScale(0.6,0.6);
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0);
+		BackgroundColor3 = Color3.fromHex("#1f1f28");
+		BorderSizePixel = 5;
+		BorderColor3= Color3.fromRGB(255, 85, 0);
 	})
 
+	local Title = screens[1]:CreateElement('TextLabel',{
+		AnchorPoint = Vector2.new(0,0);
+		Position = UDim2.fromScale(0,0);
+		Size = UDim2.fromScale(1,0.1);
+		Text = `Lua App | PID: {PID.Descriptor}`;
+		TextXAlignment = Enum.TextXAlignment.Left;
+		TextScaled = true;
+		TextColor3 = Color3.fromRGB(255, 255, 255);
+		BackgroundTransparency = 1;
+		Font = "Arcade";
+		BackgroundColor3 = Color3.fromRGB(163, 163, 163);
+		BorderSizePixel = 0
+	})
+
+	Title.Parent = AppFrame
+
+	local FunctionFrame = screens[1]:CreateElement('Frame',{
+		AnchorPoint = Vector2.new(0,1);
+		Position = UDim2.fromScale(0,1);
+		Size = UDim2.fromScale(1,0.9);
+		BackgroundColor3 = Color3.fromRGB(0, 0, 0);
+		BorderSizePixel = 0
+	})
+
+	local RoundingAppFrame = screens[1]:CreateElement('UICorner',{CornerRadius=UDim.new(0,10)})
+
+	RoundingAppFrame.Parent = AppFrame
+
+	table.insert(PID.Elements,RoundingAppFrame)
+
+	FunctionFrame.Parent = AppFrame
+
 	table.insert(PID.Elements,FunctionFrame)
+	table.insert(PID.Elements,Title)
+	table.insert(PID.Elements,AppFrame)
 
 	sandboxFunc.CreateElementSandboxed = function(type1, params)
 		local element = screens[1]:CreateElement(type1, params)
