@@ -564,6 +564,8 @@ local CMDS = {
 		},
 
 		Function = function(commandName, segment)
+			ClearTerminal()
+			
 			for commandname,cmd in pairs(cmdref) do
 				Console(`{commandname} - {cmd.Description or "No description"}`)
 				if cmd.Flags then
