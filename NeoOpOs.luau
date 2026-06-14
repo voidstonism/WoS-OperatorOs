@@ -7,7 +7,6 @@ end
 -- Automatically generated header, provides typechecking. Disable "Microcontroller Typechecking" in advanced settings to remove.
 --[[MBEE_HEADER__DO_NOT_EDIT]]
 local System ={
-	LocalHost = "127.0.0.1";
 	KeyBoardFocus = {
 		Mode = nil;
 		SubMode = nil;
@@ -166,6 +165,7 @@ local PartstoGet = {
 	"Instrument";
 	"Speaker";
 	"Microphone";
+	"BlackBox";
 	"Telescope";
 }
 
@@ -210,6 +210,8 @@ local types = {
 }
 
 --cmds
+
+local cmdref
 
 local CMDS = {
 	echo = {
@@ -410,6 +412,45 @@ local CMDS = {
 			end
 		end,
 	};
+	blackbox = {
+		Flags = {
+			f = function(arg)
+				local BlackBox = System.Parts.BlackBox
+				Console("TimeFormat: (hh:mm:ss) Please press f9 to view unfiltered output.")
+				local EventFilter = {
+					["HyperDrive is warping to"] = true,
+					["Spawned"] = true,
+				}
+				
+				local logs = BlackBox:GetLogs()
+				for _, log in logs do
+					if EventFilter[log.Event] then
+						Console(`{FormatTime(math.round(log.TimeAgo))} ago {log.Desc}`)
+					end
+				end
+			end,
+			a = function(arg)
+				local BlackBox = System.Parts.BlackBox
+				Console("TimeFormat: (hh:mm:ss) Please press f9 to view unfiltered output.")
+				local logs = BlackBox:GetLogs()
+				for _, log in logs do
+					Console(`{FormatTime(math.round(log.TimeAgo))} ago {log.Desc}`)
+				end
+			end,
+		},
+
+		Function = function(commandName, segment)
+			local parsed = ParseCommandLine(segment)
+
+			for _, entry in ipairs(parsed) do
+				if entry.Flag then
+					RunFlags(commandName, {entry.Flag}, entry.Args)
+				else
+					FlagInterater(commandName)
+				end
+			end
+		end,
+	};
 	cm = {
 		Flags = {
 			smmc = function(arg)
@@ -422,6 +463,8 @@ local CMDS = {
 				System.KeyBoardFocus.SubMode = "atms"
 			end,
 		},
+		
+		Description = "Modem Connection";
 
 		Function = function(commandName, segment)
 			local parsed = ParseCommandLine(segment)
@@ -451,6 +494,8 @@ local CMDS = {
 					Console(`[Standard][{System.Parts.Modem.NetworkID}]: {msg}`)
 				end
 			end)	
+
+			ClearTerminal()
 
 			Console(`[{System.Parts.Modem.NetworkID}] : Connection Establised`,Color3.fromRGB(85, 170, 0))
 
@@ -506,10 +551,59 @@ local CMDS = {
 			Console(s)
 		end
 	};
+	clear = {
+		Flags = {
+		},
+
+		Function = function(commandName, segment)
+			ClearTerminal()
+		end
+	};
+	help = {
+		Flags = {
+		},
+
+		Function = function(commandName, segment)
+			for commandname,cmd in pairs(cmdref) do
+				Console(`{commandname} - {cmd.Description or "No description"}`)
+				if cmd.Flags then
+					for flag, _ in pairs(cmd.Flags) do
+						Console(`	{flag} - {flag.Description or "No description"}`,Color3.fromRGB(255, 255, 127))
+					end
+				end
+			end
+		end
+	};
 }
 
 
+cmdref = CMDS
+
 --CMDS STUFF
+
+function PadZero(n)
+	return n < 10 and "0" or ""
+end
+
+function FormatTime(seconds)
+	local sec = seconds % 60
+	local min = math.floor((seconds // 60) % 60)
+	local hr = math.floor(seconds // 3600)
+
+	return `{PadZero(hr)}{hr}:{PadZero(min)}{min}:{PadZero(sec)}{sec}`
+end
+
+
+function ClearTerminal()
+	for _, label in pairs(System.Terminal.TerminalTextLabels) do
+		label:Remove()
+	end
+	System.Terminal.TerminalTextLabels = {}
+	for _, s in screens do
+		s:ClearElements()
+		SYSTEMINITFUNC.INITFRAMES()
+	end
+end
 
 function ArgMerger(args)
 	return table.concat(args, " ")
