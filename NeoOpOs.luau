@@ -92,6 +92,7 @@ function MD2F_Silent()
 	if System.DiskCount ~= 0 then
 		for i, d in FindParts("Disk") do
 			System[`Disk{i}`] = {}
+			System[`Disk{i}`].Disk = d
 			System[`Disk{i}`].Files = d:ReadAll()
 		end
 	else
@@ -574,8 +575,6 @@ local CMDS = {
 				["/ArvidCom"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ArvidSilverlockModem.lua.luau";
 				["/Txt"] = "Hi there";
 			}
-			
-			SaveData(System.Disk1.Disk,"puter")
 			
 			for Path, Data in NativePrograms do
 				SaveData(System.Disk1.Disk,Path,Data)
