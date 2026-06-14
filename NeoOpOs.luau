@@ -559,6 +559,29 @@ local CMDS = {
 			ClearTerminal()
 		end
 	};
+	wp = {
+		Flags = {
+		},
+
+		Function = function(commandName, segment)
+			Console("Writing optional Programs to Disk")
+			
+			local NativePrograms = {
+				["/clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
+				["/radar"] = "t:lua/https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
+				["/wOS"] = "t:lua/https://raw.githubusercontent.com/0mori1/puter/refs/heads/main/code/putercode.lua";
+				["/ModemCom"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ModemCom.luau";
+				["/ArvidCom"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ArvidSilverlockModem.lua.luau";
+				["/Txt"] = "Hi there";
+			}
+			
+			SaveData(System.Disk1.Disk,"puter")
+			
+			for Path, Data in NativePrograms do
+				SaveData(System.Disk1.Disk,Path,Data)
+			end
+		end
+	};
 	help = {
 		Flags = {
 		},
