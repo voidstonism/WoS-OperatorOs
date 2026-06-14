@@ -271,7 +271,7 @@ local CMDS = {
 				if entry.Flag then
 					RunFlags(commandName, {entry.Flag}, entry.Args)
 				else
-					local path = entry.Args[1]
+					local path = table.concat(entry.Args," ",1,#entry.Args)
 					local Data = FindFile(path)
 
 
@@ -387,7 +387,7 @@ local CMDS = {
 			end,
 			r = function(arg)
 				local DiskNumber = arg[1]
-				local filename = arg[2]
+				local filename = table.concat(arg," ",2,#arg)
 				local Data = ReadData(System[`Disk{DiskNumber}`].Disk,filename)
 				Console(`{filename} on Disk {DiskNumber}:`)
 				Console(`	{Data}`)
@@ -425,18 +425,18 @@ local CMDS = {
 
 		Function = function(commandName, segment)
 			local parsed = ParseCommandLine(segment)
-			
+
 			System.KeyBoardFocus.Mode = "modem"
-			
+
 			local PrevMsg = ""
 
 			System.Connections.ModemConnect = System.Parts.Modem.MessageSent:Connect(function(msg)
 				if PrevMsg == msg then
 					return
 				end
-				
+
 				PrevMsg = msg
-				
+
 				local msgid = string.match(msg, "MID:%d%d%d%d%d%d%d ") -- voidstonism message id format for modemcom
 
 				local success, Jsonfile = pcall(function()
@@ -700,9 +700,9 @@ local KeyboardModes = {
 
 			txt = `{plr} has disconnected.`
 		end
-		
+
 		local Modem = System.Parts.Modem
-		
+
 		local ContentToSend = txt
 
 		local function GenerateID(Len:number)
