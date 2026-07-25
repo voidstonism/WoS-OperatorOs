@@ -216,6 +216,7 @@ local cmdref
 
 local CMDS = {
 	echo = {
+		Description = "echos back at you. -w to display warning message";
 		Flags = {
 			w = function(arg)
 				ConsoleWarn(ArgMerger(arg))
@@ -235,6 +236,7 @@ local CMDS = {
 		end
 	};
 	reboot = {
+		Description = "reboot -n to reboot immediately";
 		Flags = {
 			n = function(arg)
 				Restart()
@@ -262,6 +264,7 @@ local CMDS = {
 		end
 	};
 	open = {
+		Description = "Finds and opens files on a disk (e.x. open /wOS)";
 		Flags = {
 			raw = function(arg)
 
@@ -298,6 +301,7 @@ local CMDS = {
 		end
 	};
 	run = {
+		Description = "run formattted files (for compadability) use -raw to run unformatted";
 		Flags = {
 			raw = function(arg)
 				local Data = ArgMerger(arg)
@@ -320,6 +324,7 @@ local CMDS = {
 		end
 	};
 	ls = {
+		Description = "List Files, -s to sync disk to memory";
 		Flags = {
 			s = function(arg)
 				MirrorDataToFile()
@@ -351,6 +356,7 @@ local CMDS = {
 		end
 	};
 	pkill = {
+		Description = "Kills processes, use -a to kill all processes.";
 		Flags = {
 			a = function(arg)
 				pkillall()
@@ -373,6 +379,7 @@ local CMDS = {
 		end
 	};
 	disk = {
+		Description = "Disk Utils, -w to write (e.x. disk -w <DiskNumber> <FileName> <Data>), -wc to write code, -r to read (e.x. disk -r <DiskNumber> <FileName>)";
 		Flags = {
 			w = function(arg)
 				local DiskNumber = arg[1]
@@ -395,10 +402,6 @@ local CMDS = {
 				Console(`{filename} on Disk {DiskNumber}:`)
 				Console(`	{Data}`)
 			end,
-			d = function(arg)
-				local file = arg[1]
-				MirrorDataToFile()
-			end,
 		},
 
 		Function = function(commandName, segment)
@@ -414,6 +417,7 @@ local CMDS = {
 		end,
 	};
 	blackbox = {
+		Description = "Read BlackBoxs; -a to real all, -f to filter for Warps and spawning events.";
 		Flags = {
 			f = function(arg)
 				local BlackBox = System.Parts.BlackBox
@@ -422,7 +426,7 @@ local CMDS = {
 					["HyperDrive is warping to"] = true,
 					["Spawned"] = true,
 				}
-				
+
 				local logs = BlackBox:GetLogs()
 				for _, log in logs do
 					if EventFilter[log.Event] then
@@ -464,8 +468,8 @@ local CMDS = {
 				System.KeyBoardFocus.SubMode = "atms"
 			end,
 		},
-		
-		Description = "Modem Connection";
+
+		Description = "Modem Connection. MODES: -sm (STANDARD MSG), SMMC (ID ATTACHED MESSAGES), ATMS (JSON ENCODED TABLE MESSAGING)";
 
 		Function = function(commandName, segment)
 			local parsed = ParseCommandLine(segment)
@@ -510,6 +514,8 @@ local CMDS = {
 		end,
 	};
 	fetch = {
+		Description = "Fetch information about system.";
+		
 		Flags = {
 		},
 
@@ -553,6 +559,7 @@ local CMDS = {
 		end
 	};
 	clear = {
+		Description = "Clears screen.";
 		Flags = {
 		},
 
@@ -561,12 +568,13 @@ local CMDS = {
 		end
 	};
 	wp = {
+		Description = "Writes optional programs onto Disk.";
 		Flags = {
 		},
 
 		Function = function(commandName, segment)
 			Console("Writing optional Programs to Disk")
-			
+
 			local NativePrograms = {
 				["/clock"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/Clock.lua";
 				["/radar"] = "t:lua/https://raw.githubusercontent.com/voidstonism/WoSRadar/refs/heads/main/MAINCODE.pilot.luau";
@@ -575,26 +583,28 @@ local CMDS = {
 				["/ArvidCom"] = "t:lua/https://raw.githubusercontent.com/voidstonism/VOIDSTONISMSHIPCODEFORWOS/refs/heads/main/ArvidSilverlockModem.lua.luau";
 				["/Txt"] = "Hi there";
 			}
-			
+
 			for Path, Data in NativePrograms do
 				SaveData(System.Disk1.Disk,Path,Data)
 			end
 		end
 	};
 	help = {
+		Description = "Run down of availible commands and flags";
 		Flags = {
 		},
 
 		Function = function(commandName, segment)
 			ClearTerminal()
-			
+
 			for commandname,cmd in pairs(cmdref) do
-				Console(`{commandname} - {cmd.Description or "No description"}`)
+				Console(`{commandname} : [{cmd.Description or "No description"}]`)
 				if cmd.Flags then
 					for flag, _ in pairs(cmd.Flags) do
-						Console(`	{flag} - {flag.Description or "No description"}`,Color3.fromRGB(255, 255, 127))
+						Console(`	-{flag}`,Color3.fromRGB(255, 255, 127))
 					end
 				end
+				Console("")
 			end
 		end
 	};
