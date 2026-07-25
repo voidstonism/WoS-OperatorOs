@@ -417,7 +417,7 @@ local CMDS = {
 		end,
 	};
 	blackbox = {
-		Description = "Read BlackBoxs; -a to real all, -f to filter for Warps and spawning events.";
+		Description = "Read BlackBoxs; -a to real all, -f to filter for Warps and spawning events., -w for warps only";
 		Flags = {
 			f = function(arg)
 				local BlackBox = System.Parts.BlackBox
@@ -425,6 +425,20 @@ local CMDS = {
 				local EventFilter = {
 					["HyperDrive is warping to"] = true,
 					["Spawned"] = true,
+				}
+
+				local logs = BlackBox:GetLogs()
+				for _, log in logs do
+					if EventFilter[log.Event] then
+						Console(`{FormatTime(math.round(log.TimeAgo))} ago {log.Desc}`)
+					end
+				end
+			end,
+			w = function(arg)
+				local BlackBox = System.Parts.BlackBox
+				Console("TimeFormat: (hh:mm:ss) Please press f9 to view unfiltered output.")
+				local EventFilter = {
+					["HyperDrive is warping to"] = true,
 				}
 
 				local logs = BlackBox:GetLogs()
