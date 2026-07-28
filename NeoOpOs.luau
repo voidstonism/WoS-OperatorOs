@@ -148,6 +148,26 @@ function RunGitFile(Data,Format)
 	end
 end
 
+local function SendMessage(Modem, message, WebHook)
+	local success, er = pcall(function()
+
+		local embed = {
+			username = "NeoOpOs",
+			embeds = {{
+				title = "Message",
+				description = message,
+				footer = {
+					text = ""
+				}
+			}},
+		}
+
+		Modem:PostAsync(WebHook, JSONEncode(embed))
+	end)
+
+	return success, er
+end
+
 function SaveData(Disk,Key_OR_Path,Data)
 	Disk:Write(Key_OR_Path,Data)
 	MD2F_Silent()
@@ -295,6 +315,32 @@ local CMDS = {
 					else
 						ConsoleWarn("Input format not recognized. Outputting raw data:")
 						Console(Data)
+					end
+				end
+			end
+		end
+	};
+	http = {
+		Description = "http <Hook> <Your Message>";
+		Flags = {
+		},
+		Function = function(commandName, segment)
+			local parsed = ParseCommandLine(segment)
+
+			for _, entry in ipairs(parsed) do
+				if entry.Flag then
+					RunFlags(commandName, {entry.Flag}, entry.Args)
+				else
+					local hook = entry.Args[1]
+					local Message = table.concat(entry.Args," ",2)
+					if System.Parts.Modem then
+						local Suc, error =  SendMessage(System.Parts.Modem, Message, hook)
+
+						if Suc == true then
+							Console("Message sent successfully!")
+						else
+							ConsoleWarn(error)
+						end
 					end
 				end
 			end
