@@ -545,6 +545,12 @@ local CMDS = {
 
 				PrevMsg = msg
 
+				if type(msg) == "table" then
+					Console(`[TABLE][{System.Parts.Modem.NetworkID}]: {JSONEncode(msg)}`)
+					warn("Because raw table messages are not native to this OS, they will be encoded in json and displayed.")
+					return
+				end
+
 				local msgid = string.match(msg, "MID:%d%d%d%d%d%d%d ") -- voidstonism message id format for modemcom
 
 				local success, Jsonfile = pcall(function()
