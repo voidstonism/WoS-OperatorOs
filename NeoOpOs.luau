@@ -200,7 +200,7 @@ local types = {
 		Console(Data)
 	end,
 	["t:lua/"] = function(Data)
-		if string.find(Data,"https://raw.githubusercontent.com/") then
+		if string.find(Data,"https://raw.githubusercontent.com/") or string.find(Data,"https://gist.github.com/") then
 			Console("Github File detected")
 			ConsoleWarn("WARNING: this requires a modem")
 			if not System.Parts.Modem then
